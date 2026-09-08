@@ -153,7 +153,7 @@ export async function quote(symbol: string): Promise<RawQuote | null> {
 
 const YF_MAP: Record<string, string> = {
   EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'JPY=X',
-  XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: '%5ENDX',
+  XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: 'NQ=F',
 };
 
 interface YahooChart {

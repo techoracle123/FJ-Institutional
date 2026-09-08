@@ -2,16 +2,19 @@
 import Link from 'next/link';
 import { ArrowUpRight, TrendingUp, TrendingDown, Minus, AlertOctagon } from 'lucide-react';
 import { useMarket } from '@/lib/useState';
+import { useTicks } from '@/lib/useTicks';
 import { bySymbol, INSTRUMENTS } from '@/lib/types';
 import Regime from '@/components/Regime';
+import Summary from '@/components/Summary';
 import ThesisCard from '@/components/ThesisCard';
 import { Panel, Num, ObsDot, ObsLegend, Empty, Pill, cx, Spark } from '@/components/ui';
 
-function QuoteStrip({ quotes }: { quotes: Record<string, any> }) {
+function QuoteStrip({ quotes, ticks, flash }: { quotes: Record<string, any>; ticks: Record<string, any>; flash: Record<string,'up'|'down'> }) {
   return (
     <div className="scrollbar-none -mx-4 flex gap-px overflow-x-auto px-4 sm:mx-0 sm:px-0">
       {INSTRUMENTS.map(i => {
-        const q = quotes[i.symbol];
+        const q = ticks[i.symbol] ?? quotes[i.symbol];
+        const f = flash[i.symbol];
         const up = q && q.changePct >= 0;
         return (
           <Link key={i.symbol} href={`/markets/${i.symbol}`}
@@ -22,7 +25,7 @@ function QuoteStrip({ quotes }: { quotes: Record<string, any> }) {
             </div>
             {q ? (
               <>
-                <div className="num mt-1 text-[16px] font-semibold tracking-tight">
+                <div className="num mt-1 text-[16px] font-semibold tracking-tight transition-colors duration-500" style={{ color: f === 'up' ? 'var(--color-long)' : f === 'down' ? 'var(--color-short)' : undefined }}>
                   {q.price.toLocaleString(undefined, { minimumFractionDigits: i.digits, maximumFractionDigits: i.digits })}
                 </div>
                 <div className="mt-0.5 flex items-center gap-1">
@@ -43,6 +46,7 @@ function QuoteStrip({ quotes }: { quotes: Record<string, any> }) {
 
 export default function Now() {
   const { data, loading, err } = useMarket();
+  const { ticks, flash } = useTicks(5000);
 
   if (loading) return (
     <div className="space-y-4">
@@ -83,7 +87,9 @@ export default function Now() {
         </div>
       </div>
 
-      <QuoteStrip quotes={data.quotes} />
+      <QuoteStrip quotes={data.quotes} ticks={ticks} flash={flash} />
+
+      {data.summary && <Summary s={data.summary} />}
 
       <Regime r={data.regime} spark={realSpark} />
 

@@ -7,6 +7,7 @@ export type FullState = MarketState & {
   ok: boolean;
   theses: Thesis[];
   noEdge: { symbol: string; reason: string }[];
+  summary?: import('./summary').Summary;
 };
 
 export function useMarket(pollMs = 60_000) {

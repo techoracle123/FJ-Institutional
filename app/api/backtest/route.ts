@@ -40,6 +40,9 @@ export async function GET(req: Request) {
       ok: true,
       results: ok.map(({ trades, ...rest }) => ({ ...rest, recent: trades.slice(-12).reverse() })),
       recalibration: curve,
+      perInstrument: Object.fromEntries(
+        ok.map(r => [r.symbol, fitRecalibration(r.trades)]).filter(([, c]) => (c as unknown[]).length > 0)
+      ),
       aggregate: {
         n: all.length,
         hitRate: all.length ? Math.round((wins / all.length) * 1000) / 10 : 0,
