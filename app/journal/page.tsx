@@ -20,34 +20,39 @@ export default function Journal() {
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({ symbol: 'EURUSD', direction: 'long', entry: '', exit: '', r: '', note: '' });
 
+  const authed = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    const t = data.session?.access_token;
+    return t ? { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } : null;
+  }, []);
+
   const load = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase.from('journal')
-      .select('*').order('created_at', { ascending: false }).limit(100);
-    if (error) setErr(error.message); else { setRows(data as Entry[]); setErr(null); }
-  }, [user]);
+    const h = await authed();
+    if (!h) return;
+    const r = await fetch('/api/journal', { headers: h, cache: 'no-store' });
+    const j = await r.json();
+    if (j.ok) { setRows(j.entries); setErr(null); } else setErr(j.error);
+  }, [user, authed]);
 
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from('journal').insert({
-      user_id: user.id,
-      symbol: form.symbol,
-      direction: form.direction,
-      entry: form.entry ? parseFloat(form.entry) : null,
-      exit: form.exit ? parseFloat(form.exit) : null,
-      r: form.r ? parseFloat(form.r) : null,
-      note: form.note,
-    });
+    const h = await authed();
+    if (!h) { setBusy(false); return; }
+    const res = await fetch('/api/journal', { method: 'POST', headers: h, body: JSON.stringify(form) });
+    const j = await res.json();
     setBusy(false);
-    if (error) setErr(error.message);
+    if (!j.ok) setErr(j.error);
     else { setForm({ ...form, entry: '', exit: '', r: '', note: '' }); load(); }
   };
 
   const del = async (id: string) => {
-    await supabase.from('journal').delete().eq('id', id);
+    const h = await authed();
+    if (!h) return;
+    await fetch(`/api/journal?id=${id}`, { method: 'DELETE', headers: h });
     load();
   };
 

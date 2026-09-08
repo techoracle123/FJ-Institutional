@@ -1,5 +1,7 @@
 # FJ Institutional
 
+**Live: https://fj-institutional.techoracle0.workers.dev**
+
 A market intelligence operating system. It reads the global market across twelve
 causal layers and resolves it into a small number of evidence-backed, falsifiable
 trade theses — entry, exit, why, and a calibrated probability.
@@ -45,7 +47,20 @@ cp .env.example .env.local   # fill in keys
 npm run dev
 ```
 
-Then apply `supabase/schema.sql` in Supabase Studio → SQL Editor.
+No database migration is required. Accounts are created server-side (instant,
+no confirmation email) and journal entries persist in Supabase user metadata.
+
+`supabase/schema.sql` is optional — apply it only if you later want journal
+entries in dedicated Postgres tables with row-level security.
+
+## Deploy
+
+```bash
+npx opennextjs-cloudflare build
+npx wrangler deploy
+```
+
+Requires Node 22+. Server secrets are set with `wrangler secret put`.
 
 ## Routes
 
