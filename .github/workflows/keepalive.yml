@@ -1,0 +1,35 @@
+name: Keep-alive & health
+
+# Supabase free projects pause after ~1 week of inactivity, and GitHub
+# disables scheduled workflows after 60 days of repo inactivity. This does
+# both jobs at once. Offset minute avoids the top-of-hour scheduling queue.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping production intelligence API
+        run: |
+          code=$(curl -s -o /tmp/state.json -w '%{http_code}' --max-time 90 \
+            https://fjinstitutional.techoracle0.workers.dev/api/state)
+          echo "state HTTP $code"
+          test "$code" = "200"
+          node -e "
+            const d=require('/tmp/state.json');
+            if(!d.ok) throw new Error('API returned ok:false');
+            console.log('data confidence:', d.dataConfidence + '%');
+            console.log('regime:', d.regime.risk);
+            console.log('theses:', d.theses.length);
+            if (d.dataConfidence < 85) console.log('::warning::Data confidence below gate');
+          "
+
+      - name: Keep Supabase awake
+        env:
+          SUPABASE_URL: https://ejnksphnktdacvngjmos.supabase.co
+        run: |
+          curl -s -o /dev/null -w 'supabase auth HTTP %{http_code}\n' --max-time 30 \
+            "$SUPABASE_URL/auth/v1/health"

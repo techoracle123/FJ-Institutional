@@ -31,6 +31,8 @@ export interface MacroSnapshot {
   seriesReal10y: { date: string; value: number }[];
   seriesUs2y: { date: string; value: number }[];
   seriesVix: { date: string; value: number }[];
+  /** Raw histories kept so correlations can be measured, never assumed. */
+  hist: Record<string, { date: string; value: number }[]>;
 }
 
 export async function macroSnapshot(): Promise<MacroSnapshot> {
@@ -67,6 +69,12 @@ export async function macroSnapshot(): Promise<MacroSnapshot> {
     seriesReal10y: real10?.series ?? [],
     seriesUs2y: us2?.series ?? [],
     seriesVix: vix?.series ?? [],
+    hist: {
+      US2Y: us2?.series ?? [], US10Y: us10?.series ?? [],
+      REAL10Y: real10?.series ?? [], CURVE: curve?.series ?? [],
+      HYOAS: hy?.series ?? [], VIX: vix?.series ?? [],
+      DXY: dxy?.series ?? [], BE10Y: be?.series ?? [],
+    },
   };
 }
 
@@ -173,31 +181,83 @@ export function classifyRegime(m: MacroSnapshot, q: Record<string, RawQuote>): R
 // ---------------------------------------------------------------
 // CROSS-ASSET BOARD
 // ---------------------------------------------------------------
+/**
+ * Pearson correlation of daily CHANGES between two date-aligned series.
+ * Correlating levels would report spurious ~0.99 trends; changes are what
+ * actually matter for cross-asset behaviour.
+ */
+function corrOfChanges(
+  a: { date: string; value: number }[],
+  b: { date: string; value: number }[]
+): number | null {
+  if (!a?.length || !b?.length) return null;
+  const mb = new Map(b.map(p => [p.date, p.value]));
+  const xs: number[] = [], ys: number[] = [];
+  const sa = [...a].sort((p, q) => p.date.localeCompare(q.date));
+  let pa: number | null = null, pb: number | null = null;
+  for (const p of sa) {
+    const v = mb.get(p.date);
+    if (v == null) continue;
+    if (pa != null && pb != null) { xs.push(p.value - pa); ys.push(v - pb); }
+    pa = p.value; pb = v;
+  }
+  const n = xs.length;
+  if (n < 30) return null;
+  const mx = xs.reduce((s2, v) => s2 + v, 0) / n;
+  const my = ys.reduce((s2, v) => s2 + v, 0) / n;
+  let num = 0, dx = 0, dy = 0;
+  for (let i = 0; i < n; i++) {
+    const a1 = xs[i] - mx, b1 = ys[i] - my;
+    num += a1 * b1; dx += a1 * a1; dy += b1 * b1;
+  }
+  if (dx === 0 || dy === 0) return null;
+  return Math.max(-1, Math.min(1, num / Math.sqrt(dx * dy)));
+}
+
 export function crossAssetBoard(m: MacroSnapshot, q: Record<string, RawQuote>): CrossAssetRow[] {
   const rows: CrossAssetRow[] = [];
   const add = (
     symbol: string, label: string, value: number, unit: string,
-    d1: number, correlation: number, obs: CrossAssetRow['obs']
+    d1: number, correlation: number | null, obs: CrossAssetRow['obs']
   ) => {
     if (!Number.isFinite(value)) return;
     const corrState: CrossAssetRow['corrState'] =
-      Math.abs(correlation) > 0.6 ? 'intact' : Math.abs(correlation) > 0.35 ? 'weakening' : 'broken';
-    rows.push({ symbol, label, value, unit, d1, w1: d1 * 2.1, correlation, corrState, obs });
+      correlation == null ? 'unknown'
+        : Math.abs(correlation) > 0.6 ? 'intact'
+        : Math.abs(correlation) > 0.35 ? 'weakening' : 'broken';
+    // Round at the boundary: float arithmetic on rate deltas otherwise emits
+    // artefacts like 13.999999999999968 straight into the UI.
+    const r2 = (v: number) => (Number.isFinite(v) ? Math.round(v * 100) / 100 : 0);
+    rows.push({
+      symbol, label, value: r2(value), unit,
+      d1: r2(d1),
+      correlation: correlation == null ? null : Math.round(correlation * 100) / 100,
+      corrState, obs,
+    });
   };
 
-  add('US2Y', 'US 2-Year', m.us2y, '%', m.us2yChg * 100, -0.72, 'measured');
-  add('US10Y', 'US 10-Year', m.us10y, '%', m.us10yChg * 100, -0.58, 'measured');
-  add('REAL10Y', '10Y Real Yield', m.real10y, '%', m.real10yChg * 100, -0.81, 'measured');
-  add('CURVE', '2s10s Curve', m.curve, 'bp', m.curveChg * 100, 0.31, 'derived');
-  add('HYOAS', 'HY Credit OAS', m.hyOas, '%', m.hyOasChg * 100, -0.64, 'measured');
-  add('VIX', 'VIX', m.vix, '', m.vixChg, -0.69, 'measured');
-  add('DXY', 'Broad Dollar', m.dxy, '', m.dxyChg, -0.88, 'measured');
-  add('BE10Y', '10Y Breakeven', m.breakeven, '%', 0, 0.42, 'measured');
+  // Every correlation below is MEASURED from FRED history against the 10Y
+  // real yield (the shared macro anchor), not asserted from memory.
+  const anchor = m.hist?.REAL10Y ?? [];
+  const rho = (id: string) =>
+    id === 'REAL10Y' ? 1 : corrOfChanges(m.hist?.[id] ?? [], anchor);
+
+  add('US2Y', 'US 2-Year', m.us2y, '%', m.us2yChg * 100, rho('US2Y'), 'measured');
+  add('US10Y', 'US 10-Year', m.us10y, '%', m.us10yChg * 100, rho('US10Y'), 'measured');
+  add('REAL10Y', '10Y Real Yield', m.real10y, '%', m.real10yChg * 100, rho('REAL10Y'), 'measured');
+  add('CURVE', '2s10s Curve', m.curve, 'bp', m.curveChg * 100, rho('CURVE'), 'derived');
+  add('HYOAS', 'HY Credit OAS', m.hyOas, '%', m.hyOasChg * 100, rho('HYOAS'), 'measured');
+  add('VIX', 'VIX', m.vix, '', m.vixChg, rho('VIX'), 'measured');
+  add('DXY', 'Broad Dollar', m.dxy, '', m.dxyChg, rho('DXY'), 'measured');
+  add('BE10Y', '10Y Breakeven', m.breakeven, '%',
+    (m.hist?.BE10Y?.length ?? 0) > 1
+      ? (m.hist.BE10Y.at(-1)!.value - m.hist.BE10Y.at(-2)!.value) * 100 : 0,
+    rho('BE10Y'), 'measured');
 
   for (const s of ['XAUUSD', 'XAGUSD', 'NAS100'] as const) {
     const x = q[s];
     if (x) add(s, s === 'NAS100' ? 'Nasdaq 100' : s === 'XAUUSD' ? 'Gold' : 'Silver',
-      x.price, '', x.changePct, s === 'XAUUSD' ? -0.79 : s === 'XAGUSD' ? -0.61 : 0.55, 'measured');
+      x.price, '', x.changePct, null, 'measured');
   }
   return rows;
 }

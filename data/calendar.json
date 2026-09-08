@@ -1,0 +1,237 @@
+{
+  "fetchedAt": "2026-09-08T06:56:03.303Z",
+  "events": [
+    {
+      "time": "2026-09-08T13:15:00.000Z",
+      "title": "Monetary Policy Report Hearings",
+      "currency": "GBP",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "GBPUSD"
+      ]
+    },
+    {
+      "time": "2026-09-09T17:00:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-09-10T12:15:00.000Z",
+      "title": "Main Refinancing Rate",
+      "currency": "EUR",
+      "impact": "high",
+      "consensus": 2.65,
+      "prior": 2.4,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-09-10T12:15:00.000Z",
+      "title": "Monetary Policy Statement",
+      "currency": "EUR",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-09-10T12:30:00.000Z",
+      "title": "Core PPI m/m",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 0.3,
+      "prior": 0.2,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-10T12:30:00.000Z",
+      "title": "PPI m/m",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 0.4,
+      "prior": 0,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-10T12:30:00.000Z",
+      "title": "Unemployment Claims",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": 205,
+      "prior": 206,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-10T12:45:00.000Z",
+      "title": "ECB Press Conference",
+      "currency": "EUR",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-09-11T06:00:00.000Z",
+      "title": "GDP m/m",
+      "currency": "GBP",
+      "impact": "high",
+      "consensus": 0,
+      "prior": 0.3,
+      "affects": [
+        "GBPUSD"
+      ]
+    },
+    {
+      "time": "2026-09-11T12:30:00.000Z",
+      "title": "Core CPI m/m",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 0.2,
+      "prior": 0.2,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-11T12:30:00.000Z",
+      "title": "Core CPI y/y",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 2.4,
+      "prior": 2.5,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-11T12:30:00.000Z",
+      "title": "CPI m/m",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 0.4,
+      "prior": 0.1,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-11T12:30:00.000Z",
+      "title": "CPI y/y",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 3.4,
+      "prior": 3.4,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-11T14:00:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-09-11T14:00:00.000Z",
+      "title": "Prelim UoM Consumer Sentiment",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": 51,
+      "prior": 51,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-11T14:00:00.000Z",
+      "title": "Prelim UoM Inflation Expectations",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": null,
+      "prior": 4.3,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100"
+      ]
+    },
+    {
+      "time": "2026-09-12T07:30:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    }
+  ]
+}

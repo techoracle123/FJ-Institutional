@@ -12,13 +12,19 @@ export default function AuthPanel({ message }: { message?: string }) {
 
   const go = async () => {
     setBusy(true); setMsg(null);
-    const fn = mode === 'in'
-      ? supabase.auth.signInWithPassword({ email, password: pw })
-      : supabase.auth.signUp({ email, password: pw });
-    const { error } = await fn;
+    if (mode === 'up') {
+      // Server-side creation: instant, no confirmation email required.
+      const r = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pw }),
+      });
+      const j = await r.json();
+      if (!j.ok) { setBusy(false); setMsg(j.error); return; }
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
     setBusy(false);
     if (error) setMsg(error.message);
-    else if (mode === 'up') setMsg('Check your email to confirm your account.');
   };
 
   return (
