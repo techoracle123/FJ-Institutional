@@ -15,7 +15,7 @@ jobs:
       - name: Ping production intelligence API
         run: |
           code=$(curl -s -o /tmp/state.json -w '%{http_code}' --max-time 90 \
-            https://fj-institutional.techoracle0.workers.dev/api/state)
+            https://fjinstitutional.techoracle0.workers.dev/api/state)
           echo "state HTTP $code"
           test "$code" = "200"
           node -e "

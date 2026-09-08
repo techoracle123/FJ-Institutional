@@ -1,6 +1,6 @@
 # FJ Institutional
 
-**Live: https://fj-institutional.techoracle0.workers.dev**
+**Live: https://fjinstitutional.techoracle0.workers.dev**
 
 A market intelligence operating system. It reads the global market across twelve
 causal layers and resolves it into a small number of evidence-backed, falsifiable
