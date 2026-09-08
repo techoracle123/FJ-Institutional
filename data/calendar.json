@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-08T06:56:03.303Z",
+  "fetchedAt": "2026-09-08T17:32:10.842Z",
   "events": [
     {
       "time": "2026-09-08T13:15:00.000Z",
@@ -10,17 +10,6 @@
       "prior": null,
       "affects": [
         "GBPUSD"
-      ]
-    },
-    {
-      "time": "2026-09-09T17:00:00.000Z",
-      "title": "ECB President Lagarde Speaks",
-      "currency": "EUR",
-      "impact": "medium",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "EURUSD"
       ]
     },
     {
