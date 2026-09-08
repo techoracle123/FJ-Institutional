@@ -57,10 +57,22 @@
       "namedRegex": "^/account(?:/)?$"
     },
     {
+      "page": "/api/auth/signup",
+      "regex": "^/api/auth/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/signup(?:/)?$"
+    },
+    {
       "page": "/api/backtest",
       "regex": "^/api/backtest(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/backtest(?:/)?$"
+    },
+    {
+      "page": "/api/journal",
+      "regex": "^/api/journal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/journal(?:/)?$"
     },
     {
       "page": "/api/state",
