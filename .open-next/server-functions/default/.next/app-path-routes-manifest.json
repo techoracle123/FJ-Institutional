@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/account/page": "/account",
+  "/api/backtest/route": "/api/backtest",
+  "/api/state/route": "/api/state",
+  "/calendar/page": "/calendar",
+  "/favicon.ico/route": "/favicon.ico",
+  "/journal/page": "/journal",
+  "/markets/[symbol]/page": "/markets/[symbol]",
+  "/markets/page": "/markets",
+  "/opportunities/page": "/opportunities",
+  "/page": "/",
+  "/record/page": "/record"
+}

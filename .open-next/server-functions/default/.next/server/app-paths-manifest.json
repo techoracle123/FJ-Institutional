@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/account/page": "app/account/page.js",
+  "/api/backtest/route": "app/api/backtest/route.js",
+  "/api/state/route": "app/api/state/route.js",
+  "/calendar/page": "app/calendar/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/journal/page": "app/journal/page.js",
+  "/markets/[symbol]/page": "app/markets/[symbol]/page.js",
+  "/markets/page": "app/markets/page.js",
+  "/opportunities/page": "app/opportunities/page.js",
+  "/page": "app/page.js",
+  "/record/page": "app/record/page.js"
+}
