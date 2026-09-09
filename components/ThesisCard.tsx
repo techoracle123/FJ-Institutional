@@ -6,10 +6,17 @@ import {
   type Thesis, type LayerId,
 } from '@/lib/types';
 import { cx, Panel, Pill, ConvictionBars, ObsDot, EvidenceBar, Meter, Num } from './ui';
+import { useSettings, positionSize } from '@/lib/useSettings';
 
 const nameOf = (id: LayerId) => LAYERS.find(l => l.id === id)!;
 
 export default function ThesisCard({ t, rank }: { t: Thesis; rank?: number }) {
+  const { settings } = useSettings();
+  // Entry zone midpoint is the reference for sizing, matching the ledger.
+  const sizing = positionSize(
+    settings.accountSize, settings.riskPct, t.symbol,
+    (t.entryLow + t.entryHigh) / 2, t.stop
+  );
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<LayerId | null>(null);
   const inst = bySymbol(t.symbol)!;
@@ -120,6 +127,24 @@ export default function ThesisCard({ t, rank }: { t: Thesis; rank?: number }) {
           <Num value={t.expectedValue} digits={2} signed colorize className="text-[13px] font-medium" />
           <span className="text-[11px]" style={{ color: 'var(--color-quaternary)' }}>R</span>
         </span>
+        {t.priceRegime && (
+          <span className="flex items-baseline gap-1.5" title={t.priceRegime.description}>
+            <span className="label">Regime</span>
+            <span className="text-[11.5px] font-medium" style={{ color: 'var(--color-secondary)' }}>
+              {t.priceRegime.label}
+            </span>
+          </span>
+        )}
+        {sizing && (
+          <span className="flex items-baseline gap-1.5"
+            title={`Risking ${sizing.riskAmount} over ${sizing.pipsAtRisk} pips`}>
+            <span className="label">Size</span>
+            <span className="num text-[13px] font-medium" style={{ color: 'var(--color-accent)' }}>
+              {sizing.lots}
+            </span>
+            <span className="text-[11px]" style={{ color: 'var(--color-quaternary)' }}>lots</span>
+          </span>
+        )}
         <span className="flex items-center gap-1.5">
           <Zap size={11} style={{ color: t.accelerationRisk === 'high' ? 'var(--color-warn)' : 'var(--color-quaternary)' }} />
           <span className="label">Acceleration</span>

@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/useAuth';
 import { INSTRUMENTS } from '@/lib/types';
 import { Panel, Empty, Num, cx } from '@/components/ui';
 import AuthPanel from '@/components/AuthPanel';
+import { useSettings } from '@/lib/useSettings';
+import { fmtDateTime } from '@/lib/time';
 
 interface Entry {
   id: string; symbol: string; direction: string;
@@ -14,40 +16,47 @@ interface Entry {
 }
 
 export default function Journal() {
+  const { settings } = useSettings();
+  const tz = settings.timezone;
   const { user, loading: authLoading } = useAuth();
   const [rows, setRows] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({ symbol: 'EURUSD', direction: 'long', entry: '', exit: '', r: '', note: '' });
 
+  const authed = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    const t = data.session?.access_token;
+    return t ? { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' } : null;
+  }, []);
+
   const load = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase.from('journal')
-      .select('*').order('created_at', { ascending: false }).limit(100);
-    if (error) setErr(error.message); else { setRows(data as Entry[]); setErr(null); }
-  }, [user]);
+    const h = await authed();
+    if (!h) return;
+    const r = await fetch('/api/journal', { headers: h, cache: 'no-store' });
+    const j = await r.json();
+    if (j.ok) { setRows(j.entries); setErr(null); } else setErr(j.error);
+  }, [user, authed]);
 
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from('journal').insert({
-      user_id: user.id,
-      symbol: form.symbol,
-      direction: form.direction,
-      entry: form.entry ? parseFloat(form.entry) : null,
-      exit: form.exit ? parseFloat(form.exit) : null,
-      r: form.r ? parseFloat(form.r) : null,
-      note: form.note,
-    });
+    const h = await authed();
+    if (!h) { setBusy(false); return; }
+    const res = await fetch('/api/journal', { method: 'POST', headers: h, body: JSON.stringify(form) });
+    const j = await res.json();
     setBusy(false);
-    if (error) setErr(error.message);
+    if (!j.ok) setErr(j.error);
     else { setForm({ ...form, entry: '', exit: '', r: '', note: '' }); load(); }
   };
 
   const del = async (id: string) => {
-    await supabase.from('journal').delete().eq('id', id);
+    const h = await authed();
+    if (!h) return;
+    await fetch(`/api/journal?id=${id}`, { method: 'DELETE', headers: h });
     load();
   };
 
@@ -122,7 +131,7 @@ export default function Journal() {
                   </span>
                   {r.r != null && <Num value={r.r} digits={2} signed suffix="R" colorize className="text-[12px] font-medium" />}
                   <span className="num ml-auto text-[10.5px]" style={{ color: 'var(--color-quaternary)' }}>
-                    {new Date(r.created_at).toLocaleDateString()}
+                    {fmtDateTime(r.created_at, tz)}
                   </span>
                   <button onClick={() => del(r.id)} className="opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100">
                     <Trash2 size={12} />

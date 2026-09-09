@@ -2,13 +2,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Activity, Layers, CalendarDays, LineChart, ClipboardList, Radar } from 'lucide-react';
+import { Activity, Layers, CalendarDays, LineChart, ClipboardList, Radar, Radio } from 'lucide-react';
 import { cx, LiveDot } from './ui';
 import AuthButton from './AuthButton';
+import { useSettings } from '@/lib/useSettings';
+import { fmtTime, zoneAbbr } from '@/lib/time';
 
 const NAV = [
   { href: '/', label: 'Now', icon: Activity },
   { href: '/opportunities', label: 'Opportunities', icon: Layers },
+  { href: '/live', label: 'Live', icon: Radio },
   { href: '/markets', label: 'Markets', icon: LineChart },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/record', label: 'Track Record', icon: Radar },
@@ -16,6 +19,11 @@ const NAV = [
 ];
 
 function MarketClock() {
+  // Sessions are computed in UTC (market truth) but DISPLAYED in the user's
+  // zone. Assuming everyone is at UTC+0 was the bug; a fixed offset would
+  // also break twice a year, so we use IANA zones throughout.
+  const { settings } = useSettings();
+  const tz = settings.timezone;
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
@@ -52,7 +60,8 @@ function MarketClock() {
       <span className="label-xs" style={{ color: depthColor }}>{depth}</span>
       <span className="h-3 w-px" style={{ background: 'var(--color-hairline-strong)' }} />
       <span className="num text-[11.5px] tracking-tight" style={{ color: 'var(--color-secondary)' }}>
-        {now.toISOString().slice(11, 19)} <span style={{ color: 'var(--color-quaternary)' }}>UTC</span>
+        {fmtTime(now.toISOString(), tz, true)}{' '}
+        <span style={{ color: 'var(--color-quaternary)' }}>{zoneAbbr(tz, now)}</span>
       </span>
     </div>
   );

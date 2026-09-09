@@ -327,14 +327,37 @@ const WEIGHTS: Record<LayerId, number> = {
  * realised target-before-stop rate was ~41%. Applying this map cut the Brier
  * score from 0.307 to 0.241. Regenerate via GET /api/backtest.
  */
-const RECALIBRATION: { x: number; y: number }[] = [
-  { x: 0.578, y: 0.387 },
-  { x: 0.655, y: 0.404 },
-  { x: 0.717, y: 0.405 },
-];
+/**
+ * Isotonic recalibration, fitted PER INSTRUMENT on 5y of walk-forward trades
+ * (see lib/backtest.ts; regenerate via GET /api/backtest).
+ *
+ * A single pooled curve was wrong: it compressed every instrument to ~40%
+ * and threw away real signal. Gold reaches a 53.6% realised hit rate at high
+ * conviction while NAS100 manages 27.3% — averaging those is a lie about both.
+ *
+ * `x` = raw directional lean, `y` = realised rate of reaching T1 before stop.
+ */
+/**
+ * Number of walk-forward trades the isotonic curves below were fitted on.
+ * Exported so the UI can state the real sample size instead of a literal.
+ * Regenerate together with RECAL via GET /api/backtest.
+ */
+export const CALIB_N = 1180;
 
-function applyRecal(p: number): number {
-  const c = RECALIBRATION;
+const RECAL: Record<string, { x: number; y: number }[]> = {
+  EURUSD: [{ x: 0.642, y: 0.381 }, { x: 0.714, y: 0.417 }],
+  GBPUSD: [{ x: 0.614, y: 0.357 }, { x: 0.670, y: 0.381 }, { x: 0.699, y: 0.444 }],
+  USDJPY: [{ x: 0.578, y: 0.150 }, { x: 0.607, y: 0.375 }, { x: 0.685, y: 0.438 }],
+  XAUUSD: [{ x: 0.579, y: 0.432 }, { x: 0.664, y: 0.435 }, { x: 0.717, y: 0.536 }],
+  XAGUSD: [{ x: 0.579, y: 0.391 }, { x: 0.631, y: 0.417 }, { x: 0.711, y: 0.438 }],
+  NAS100: [{ x: 0.579, y: 0.273 }, { x: 0.668, y: 0.409 }],
+};
+
+/** Pooled fallback for any instrument without its own fitted curve. */
+const RECAL_POOLED = [{ x: 0.579, y: 0.385 }, { x: 0.666, y: 0.409 }, { x: 0.717, y: 0.424 }];
+
+function applyRecal(p: number, symbol: string): number {
+  const c = RECAL[symbol] ?? RECAL_POOLED;
   if (p <= c[0].x) return c[0].y;
   if (p >= c[c.length - 1].x) return c[c.length - 1].y;
   for (let i = 0; i < c.length - 1; i++) {
@@ -346,13 +369,12 @@ function applyRecal(p: number): number {
   return p;
 }
 
-function calibrate(raw: number, quality = 1): number {
+function calibrate(raw: number, symbol: string, quality = 1): number {
   const lean = 0.5 + 0.225 * Math.tanh(raw / 1.35);
-  // Map directional lean onto the empirically realised hit rate.
-  const p = applyRecal(lean);
+  const p = applyRecal(lean, symbol);
   const q = clamp(quality, 0, 1);
-  const shrunk = 0.5 + (p - 0.5) * q;   // degraded data shrinks toward 50%
-  return clamp(shrunk, 0.30, 0.72);
+  const shrunk = 0.5 + (p - 0.5) * q;
+  return clamp(shrunk, 0.12, 0.80);
 }
 
 export function buildThesis(symbol: string, s: MarketState): Thesis | null {
@@ -396,7 +418,14 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
   // weaker feed confidence both shrink the estimate toward 50%.
   const coverage = den / Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
   const quality = clamp(0.72 + 0.28 * coverage, 0, 1) * clamp(s.dataConfidence / 100, 0, 1);
-  const probability = calibrate(strength, quality);
+  // Regime-conditional confidence. Research (SCALPING_RESULTS_R1.md) showed
+  // identical signals returning -0.07R in chop_high vs -0.81R in trend_low.
+  // A probability that ignores structure is overstated in hostile regimes,
+  // so we shrink toward 0.5 by the regime's measured reliability.
+  const preg = s.priceRegimes?.[symbol] ?? null;
+  const rawProb = calibrate(strength, symbol, quality);
+  const rel = preg?.reliability ?? 1;
+  const probability = 0.5 + (rawProb - 0.5) * rel;
 
   // Contributing layer count drives the confidence interval
   const contributing = layers.filter(l => l.score !== null && WEIGHTS[l.id] > 0).length;
@@ -467,6 +496,7 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
   return {
     id: `${symbol}-${Date.now()}`,
     symbol,
+    priceRegime: preg,
     direction,
     klass,
     conviction,

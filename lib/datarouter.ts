@@ -3,6 +3,7 @@
 // The app must never depend on one free tier being up.
 // ============================================================
 
+import CAL_DATA from '../data/calendar.json';
 const FRED_KEY = process.env.FRED_API_KEY ?? '';
 const TD_KEY = process.env.TWELVEDATA_API_KEY ?? '';
 
@@ -20,13 +21,17 @@ function setCache(k: string, data: unknown, ttlSec: number) {
 
 async function fetchJSON<T>(
   url: string,
-  opts: { timeoutMs?: number; headers?: Record<string, string> } = {}
+  opts: { timeoutMs?: number; headers?: Record<string, string>; revalidate?: number } = {}
 ): Promise<T | null> {
-  const { timeoutMs = 9000, headers } = opts;
+  // `revalidate` maps to Cloudflare's edge cache. The in-process Map cache is
+  // useless across isolates — every cold request was refetching all 11 FRED
+  // series, costing ~9s on /api/state. Slow-moving data must be cached at the
+  // edge, not just in memory.
+  const { timeoutMs = 9000, headers, revalidate = 0 } = opts;
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const r = await fetch(url, { signal: ctl.signal, headers, next: { revalidate: 0 } });
+    const r = await fetch(url, { signal: ctl.signal, headers, next: { revalidate } });
     if (!r.ok) return null;
     return (await r.json()) as T;
   } catch {
@@ -48,7 +53,7 @@ export async function fredSeries(id: string, limit = 260): Promise<FredPoint[]> 
   if (!FRED_KEY) return [];
 
   const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${id}&api_key=${FRED_KEY}&file_type=json&limit=${limit}&sort_order=desc`;
-  const j = await fetchJSON<{ observations?: { date: string; value: string }[] }>(url);
+  const j = await fetchJSON<{ observations?: { date: string; value: string }[] }>(url, { revalidate: 1800 });
   if (!j?.observations) return [];
 
   const out = j.observations
@@ -62,7 +67,9 @@ export async function fredSeries(id: string, limit = 260): Promise<FredPoint[]> 
 
 /** Latest value + change over N observations back. */
 export async function fredLatest(id: string, lookback = 5) {
-  const s = await fredSeries(id, Math.max(lookback + 2, 30));
+  // 250 obs: correlations need >=30 aligned daily changes, and series
+  // have differing holiday calendars, so fetch a full year of history.
+  const s = await fredSeries(id, Math.max(lookback + 2, 250));
   if (!s.length) return null;
   const latest = s[0];
   const prior = s[Math.min(lookback, s.length - 1)];
@@ -122,6 +129,14 @@ export async function quote(symbol: string): Promise<RawQuote | null> {
   const hit = getCache<RawQuote>(key);
   if (hit) return hit;
 
+  // Yahoo is PRIMARY. It has no key, no quota, and covers all six instruments
+  // including silver and the Nasdaq future. Twelve Data's free tier allows
+  // only 8 requests/minute in total — polling six symbols exhausts it
+  // immediately and returns 429, which is what silently degraded the feed.
+  const y = await yahooQuote(symbol);
+  if (y) { setCache(key, y, 20); return y; }
+
+  // Fallback: Twelve Data, used only when Yahoo fails for a symbol.
   const td = TD_MAP[symbol];
   if (td && TD_KEY) {
     const j = await fetchJSON<Record<string, string>>(
@@ -143,17 +158,12 @@ export async function quote(symbol: string): Promise<RawQuote | null> {
       if (Number.isFinite(q.price)) { setCache(key, q, 60); return q; }
     }
   }
-
-  // Fallback: Yahoo chart endpoint. No key, no quota. Covers what the
-  // Twelve Data free tier gates (XAGUSD) or renames (NAS100).
-  const y = await yahooQuote(symbol);
-  if (y) { setCache(key, y, 60); return y; }
   return null;
 }
 
 const YF_MAP: Record<string, string> = {
   EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'JPY=X',
-  XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: '%5ENDX',
+  XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: 'NQ=F',
 };
 
 interface YahooChart {
@@ -163,9 +173,12 @@ interface YahooChart {
 async function yahooQuote(symbol: string): Promise<RawQuote | null> {
   const yf = YF_MAP[symbol];
   if (!yf) return null;
+  // interval=1m&range=1d gives an accurate *intraday* previous close.
+  // interval=1d&range=5d returns a stale weekly close for some FX symbols
+  // (JPY=X reported 160.196, producing a fabricated -4% daily move).
   const j = await fetchJSON<YahooChart>(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1d&range=5d`,
-    { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
+    `https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1m&range=1d`,
+    { revalidate: 20, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
   );
   const m = j?.chart?.result?.[0]?.meta;
   if (!m) return null;
@@ -235,8 +248,8 @@ export async function cotSnapshot(): Promise<CotRow[]> {
 
   // Socrata endpoint — public, no key required.
   const j = await fetchJSON<Record<string, string>[]>(
-    'https://publicreporting.cftc.gov/resource/6dca-aqww.json?$limit=400&$order=report_date_as_yyyy_mm_dd%20DESC'
-    , { timeoutMs: 12000 });
+    'https://publicreporting.cftc.gov/resource/6dca-aqww.json?$limit=400&$order=report_date_as_yyyy_mm_dd%20DESC',
+    { revalidate: 3600, timeoutMs: 12000 });  // COT publishes weekly
 
   if (!j?.length) return [];
 
@@ -286,57 +299,39 @@ export interface CalRow {
   affects: string[];
 }
 
-/** release_id → [display title, impact, instruments transmitted to] */
-const RELEASE_WATCH: Record<number, [string, 'high' | 'medium' | 'low', string[]]> = {
-  10:  ['Consumer Price Index (CPI)', 'high',   ['EURUSD', 'USDJPY', 'XAUUSD', 'NAS100']],
-  50:  ['Employment Situation (NFP)', 'high',   ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'NAS100']],
-  101: ['FOMC Press Release',         'high',   ['EURUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100']],
-  53:  ['Gross Domestic Product',     'high',   ['EURUSD', 'NAS100']],
-  46:  ['Producer Price Index (PPI)', 'medium', ['XAUUSD', 'NAS100']],
-  24:  ['Personal Income & Outlays (PCE)', 'high', ['EURUSD', 'XAUUSD', 'NAS100']],
-  9:   ['Advance Retail Sales',       'medium', ['EURUSD', 'NAS100']],
-  15:  ['Industrial Production',      'medium', ['XAGUSD']],
-  180: ['Unemployment Insurance Claims', 'medium', ['NAS100', 'XAUUSD']],
-  82:  ['Univ. of Michigan Sentiment', 'low',   ['NAS100']],
+/** Which currencies transmit to which of our instruments. */
+const CCY_AFFECTS: Record<string, string[]> = {
+  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100'],
+  EUR: ['EURUSD'],
+  GBP: ['GBPUSD'],
+  JPY: ['USDJPY'],
 };
 
-export async function calendar(daysAhead = 14): Promise<CalRow[]> {
-  const key = `cal:${daysAhead}`;
+/**
+ * Economic calendar.
+ *
+ * Sourced from ForexFactory's public weekly JSON feed, which carries real
+ * forecast and previous values across every major currency. The earlier
+ * FRED release-dates approach was abandoned: it exposed only release *dates*
+ * with no consensus figures, and its numeric release IDs did not reliably
+ * match our whitelist — the calendar silently returned zero events.
+ */
+export async function calendar(): Promise<CalRow[]> {
+  const key = 'cal:static';
   const hit = getCache<CalRow[]>(key);
   if (hit) return hit;
-  if (!FRED_KEY) return [];
 
-  const today = new Date();
-  const end = new Date(today.getTime() + daysAhead * 864e5);
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  // Imported at build time from data/calendar.json, which a scheduled
+  // GitHub Action refreshes twice daily. We do NOT fetch the upstream feed
+  // here: ForexFactory returns HTTP 429 to Cloudflare's shared egress IPs,
+  // so an edge fetch silently yields an empty calendar.
+  const now = Date.now() - 3600_000;
+  const rows = (CAL_DATA.events as CalRow[])
+    .filter(e => new Date(e.time).getTime() >= now)
+    .sort((a2, b2) => a2.time.localeCompare(b2.time));
 
-  const j = await fetchJSON<{ release_dates?: { release_id: number; release_name: string; date: string }[] }>(
-    `https://api.stlouisfed.org/fred/releases/dates?api_key=${FRED_KEY}&file_type=json` +
-    `&realtime_start=${fmt(today)}&realtime_end=${fmt(end)}&include_release_dates_with_no_data=true` +
-    `&sort_order=asc&limit=1000`
-  );
-  if (!j?.release_dates) return [];
-
-  const seen = new Set<string>();
-  const out: CalRow[] = [];
-  for (const r of j.release_dates) {
-    const w = RELEASE_WATCH[r.release_id];
-    if (!w) continue;
-    const dedupe = `${r.release_id}:${r.date}`;
-    if (seen.has(dedupe)) continue;
-    seen.add(dedupe);
-    const [title, impact, affects] = w;
-    // US macro releases land 08:30 ET on their date; FOMC 14:00 ET.
-    const hourUTC = r.release_id === 101 ? 18 : 12;
-    out.push({
-      time: new Date(`${r.date}T${String(hourUTC).padStart(2, '0')}:30:00Z`).toISOString(),
-      title, currency: 'USD', impact, consensus: null, prior: null, affects,
-    });
-  }
-
-  out.sort((a, b) => a.time.localeCompare(b.time));
-  setCache(key, out, 3600);
-  return out;
+  setCache(key, rows, 900);
+  return rows;
 }
 
 /** Daily OHLC history for backtesting — Yahoo, no key, multi-year. */
@@ -352,7 +347,8 @@ export async function history(symbol: string, range = '5y') {
     chart?: { result?: { timestamp?: number[]; indicators?: { quote?: { open: (number | null)[]; high: (number | null)[]; low: (number | null)[]; close: (number | null)[] }[] } }[] };
   }>(
     `https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1d&range=${range}`,
-    { timeoutMs: 20000, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
+    // daily bars change once per session
+    { revalidate: 3600, timeoutMs: 20000, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
   );
 
   const r = j?.chart?.result?.[0];

@@ -1,0 +1,45 @@
+name: Thesis tracker
+
+# The platform's heartbeat. Workers cannot do this (10ms CPU, no state, only
+# wakes on requests). Actions is free and unlimited on public repos.
+# Offset minutes avoid GitHub's peak-of-hour cron congestion.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tracker
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Poll and update ledger
+        run: node scripts/track.mjs
+
+      - name: Commit ledger
+        run: |
+          git config user.name "FJ Institutional Bot"
+          git config user.email "bot@users.noreply.github.com"
+          if git diff --quiet data/ledger.json 2>/dev/null; then
+            echo "No ledger change."
+            exit 0
+          fi
+          git add data/ledger.json
+          git commit -m "chore(ledger): tracker update [skip ci]"
+          # Tracker runs every 5 min; a racing commit is normal, so rebase.
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && exit 0
+            sleep 5
+          done
+          exit 1

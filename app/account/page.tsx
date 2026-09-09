@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
 import AuthPanel from '@/components/AuthPanel';
 import { Panel, Stat } from '@/components/ui';
+import { SettingsPanel } from '@/components/SettingsPanel';
 
 export default function Account() {
   const { user, loading } = useAuth();
@@ -11,6 +12,8 @@ export default function Account() {
   return (
     <div className="space-y-5">
       <h1 className="text-[26px] font-semibold leading-none tracking-tight">Account</h1>
+      <SettingsPanel />
+
       {!user ? (
         <AuthPanel message="One account gives you the journal, saved theses and alerts. Free, always." />
       ) : (

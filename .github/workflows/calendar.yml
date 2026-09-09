@@ -1,0 +1,37 @@
+name: Refresh economic calendar
+
+# ForexFactory rate-limits Cloudflare egress (429), so the calendar cannot be
+# fetched from the worker. Actions runners have clean IPs and are free and
+# unlimited on public repos. Offset minutes avoid GitHub's peak cron delays.
+on:
+  schedule:
+    - cron: '23 5 * * *'
+    - cron: '23 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fetch calendar
+        run: node scripts/fetch-calendar.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "FJ Institutional Bot"
+          git config user.email "bot@users.noreply.github.com"
+          if git diff --quiet data/calendar.json; then
+            echo "No calendar change."
+            exit 0
+          fi
+          git add data/calendar.json
+          git commit -m "chore: refresh economic calendar [skip ci]"
+          git push

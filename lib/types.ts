@@ -1,3 +1,4 @@
+import type { Regime as PricePatternRegime } from './regime';
 // ============================================================
 // FJ INSTITUTIONAL — DOMAIN MODEL
 // The twelve causal layers, observability grading, thesis lifecycle.
@@ -84,6 +85,8 @@ export interface Analogue {
 }
 
 export interface Thesis {
+  /** Price-structure regime at publication. Null if history was unavailable. */
+  priceRegime: PricePatternRegime | null;
   id: string;
   symbol: string;
   direction: Direction;
@@ -163,8 +166,9 @@ export interface Quote {
 
 export interface CrossAssetRow {
   symbol: string; label: string; value: number; unit: string;
-  d1: number; w1: number;
-  correlation: number; corrState: 'intact' | 'weakening' | 'broken';
+  d1: number;
+  /** Measured correlation of daily changes vs 10Y real yield; null if not enough data. */
+  correlation: number | null; corrState: 'intact' | 'weakening' | 'broken' | 'unknown';
   obs: Observability;
 }
 
