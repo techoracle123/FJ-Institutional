@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-09T08:15:37.020Z",
+  "fetchedAt": "2026-09-09T17:33:38.874Z",
   "events": [
     {
       "time": "2026-09-08T13:15:00.000Z",
@@ -10,6 +10,26 @@
       "prior": null,
       "affects": [
         "GBPUSD"
+      ]
+    },
+    {
+      "time": "2026-09-10T01:15:00.000Z",
+      "title": "President Trump Speaks",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
