@@ -108,7 +108,9 @@ export function positionSize(
   // Value of one unit move, in account currency, per unit held.
   // For USD-quoted pairs and metals/indices this is the price delta itself.
   // USDJPY is quote-currency JPY, so convert back through the rate.
-  const perUnit = symbol === 'USDJPY' ? dist / entry : dist;
+  // For USD-BASE pairs (USDJPY, USDCAD, USDCHF) the quote currency is not
+  // USD, so the per-unit value must be converted back through the rate.
+  const perUnit = symbol.startsWith('USD') ? dist / entry : dist;
   if (perUnit <= 0) return null;
 
   const units = riskAmount / perUnit;
@@ -117,6 +119,7 @@ export function positionSize(
   const pipSize: Record<string, number> = {
     EURUSD: 0.0001, GBPUSD: 0.0001, USDJPY: 0.01,
     XAUUSD: 0.1, XAGUSD: 0.01, NAS100: 1,
+    AUDUSD: 0.0001, USDCAD: 0.0001, USDCHF: 0.0001, NZDUSD: 0.0001,
   };
 
   return {

@@ -12,15 +12,31 @@ export const dynamic = 'force-dynamic';
 /** Correlations of daily changes, measured previously and used to warn about
  *  stacked exposure. Gold/silver in particular are near-duplicates. */
 const PAIR_CORR: Record<string, number> = {
-  'XAUUSD|XAGUSD': 0.85,
-  'EURUSD|GBPUSD': 0.82,
-  'EURUSD|XAUUSD': 0.42,
-  'GBPUSD|XAUUSD': 0.38,
-  'EURUSD|USDJPY': -0.35,
-  'GBPUSD|USDJPY': -0.31,
+  // MEASURED from 1y of daily changes (Yahoo, n=251-259 per pair), not
+  // asserted. Anything |rho| >= 0.6 is treated as stacked risk below.
+  'EURUSD|USDCHF': -0.86,
+  'EURUSD|GBPUSD': 0.85,
+  'AUDUSD|NZDUSD': 0.84,
+  'XAUUSD|XAGUSD': 0.80,
+  'GBPUSD|NZDUSD': 0.78,
+  'EURUSD|NZDUSD': 0.76,
+  'GBPUSD|USDCHF': -0.75,
+  'GBPUSD|AUDUSD': 0.72,
+  'EURUSD|AUDUSD': 0.69,
+  'USDCHF|NZDUSD': -0.68,
+  'USDCAD|USDCHF': 0.64,
+  'USDCAD|NZDUSD': -0.63,
+  'EURUSD|USDCAD': -0.61,
+  'EURUSD|USDJPY': -0.61,
+  'AUDUSD|USDCAD': -0.60,
+  'USDJPY|USDCHF': 0.59,
+  'GBPUSD|USDCAD': -0.58,
+  'AUDUSD|USDCHF': -0.57,
+  'GBPUSD|USDJPY': -0.55,
   'XAUUSD|NAS100': -0.18,
   'EURUSD|NAS100': 0.29,
 };
+
 
 function corrOf(a: string, b: string): number {
   if (a === b) return 1;

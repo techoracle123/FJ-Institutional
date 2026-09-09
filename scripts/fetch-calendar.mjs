@@ -9,10 +9,15 @@
 import { writeFileSync } from 'node:fs';
 
 const CCY_AFFECTS = {
-  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100'],
+  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
+        'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'],
   EUR: ['EURUSD'],
   GBP: ['GBPUSD'],
   JPY: ['USDJPY'],
+  AUD: ['AUDUSD'],
+  CAD: ['USDCAD'],
+  CHF: ['USDCHF'],
+  NZD: ['NZDUSD'],
 };
 
 const num = (v) => {

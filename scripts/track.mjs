@@ -36,12 +36,14 @@ const MAX_REVISIONS = 8000;
 const PIP_SIZE = {
   EURUSD: 0.0001, GBPUSD: 0.0001, USDJPY: 0.01,
   XAUUSD: 0.1, XAGUSD: 0.01, NAS100: 1.0,
+  AUDUSD: 0.0001, USDCAD: 0.0001, USDCHF: 0.0001, NZDUSD: 0.0001,
 };
 
 /** Plausibility bounds. A quote outside these is rejected, not recorded. */
 const SANE = {
   EURUSD: [0.5, 2.0], GBPUSD: [0.8, 2.5], USDJPY: [80, 250],
   XAUUSD: [500, 20000], XAGUSD: [5, 500], NAS100: [3000, 100000],
+  AUDUSD: [0.3, 1.5], USDCAD: [0.8, 2.2], USDCHF: [0.5, 1.8], NZDUSD: [0.3, 1.5],
 };
 
 const iso = (d = new Date()) => d.toISOString();

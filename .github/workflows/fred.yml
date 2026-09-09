@@ -1,0 +1,44 @@
+name: fred
+
+# FRED's WAF 403s a subset of Cloudflare edge IPs, so the Worker cannot fetch
+# it reliably. Actions runners can, so mirror it into the repo hourly.
+on:
+  schedule:
+    - cron: '41 * * * *'   # offset: :00 schedules are the most delayed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fred
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Fetch FRED series
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: node scripts/fetch-fred.mjs
+
+      - name: Commit mirror
+        run: |
+          git config user.name  "fj-bot"
+          git config user.email "fj-bot@users.noreply.github.com"
+          git add data/fred.json
+          if git diff --cached --quiet; then
+            echo "No change."
+            exit 0
+          fi
+          git commit -m "chore(data): refresh FRED mirror"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

@@ -210,6 +210,12 @@ export const INSTRUMENTS: Instrument[] = [
   { symbol: 'XAUUSD', display: 'XAU/USD', name: 'Gold Spot',              klass: 'metal', pip: 0.1,    digits: 2, tvSymbol: 'OANDA:XAUUSD', spreadEst: 0.28, drivers: ['10y real yield', 'Official-sector demand', 'DXY'] },
   { symbol: 'XAGUSD', display: 'XAG/USD', name: 'Silver Spot',            klass: 'metal', pip: 0.01,   digits: 3, tvSymbol: 'OANDA:XAGUSD', spreadEst: 0.030, drivers: ['Gold beta', 'Industrial demand', 'By-product supply'] },
   { symbol: 'NAS100', display: 'NAS100',  name: 'Nasdaq 100 Index',       klass: 'index', pip: 1,      digits: 1, tvSymbol: 'NASDAQ:NDX',   spreadEst: 1.6, drivers: ['10y real yield', 'Mega-cap earnings', 'Dealer gamma'] },
+  // spreadEst below are MEASURED medians from Dukascopy tick data across
+  // London/NY hours (79k ticks), not assumed values.
+  { symbol: 'AUDUSD', display: 'AUD/USD', name: 'Aussie / US Dollar',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:AUDUSD',    spreadEst: 0.00008, drivers: ['Risk appetite', 'China growth & metals', 'RBA vs Fed path'] },
+  { symbol: 'USDCAD', display: 'USD/CAD', name: 'US Dollar / Loonie',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:USDCAD',    spreadEst: 0.00010, drivers: ['Crude oil terms of trade', 'BoC vs Fed path', 'US–CA 2y spread'] },
+  { symbol: 'USDCHF', display: 'USD/CHF', name: 'US Dollar / Swissie',     klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:USDCHF',    spreadEst: 0.00007, drivers: ['Safe-haven demand', 'SNB policy & intervention', 'US–CH 2y spread'] },
+  { symbol: 'NZDUSD', display: 'NZD/USD', name: 'Kiwi / US Dollar',        klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:NZDUSD',    spreadEst: 0.00009, drivers: ['Risk appetite (highest G10 beta)', 'Dairy & China demand', 'RBNZ vs Fed path'] },
 ];
 
 export const bySymbol = (s: string) => INSTRUMENTS.find(i => i.symbol === s);

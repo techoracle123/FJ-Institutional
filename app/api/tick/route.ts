@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic';
 const YF: Record<string, string> = {
   EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'JPY=X',
   XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: 'NQ=F',
+  AUDUSD: 'AUDUSD=X', USDCAD: 'USDCAD=X', USDCHF: 'USDCHF=X', NZDUSD: 'NZDUSD=X',
 };
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';

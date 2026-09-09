@@ -7,6 +7,7 @@ import {
 } from '@/lib/types';
 import { cx, Panel, Pill, ConvictionBars, ObsDot, EvidenceBar, Meter, Num } from './ui';
 import { useSettings, positionSize } from '@/lib/useSettings';
+import { isProvisional } from '@/lib/thesis';
 
 const nameOf = (id: LayerId) => LAYERS.find(l => l.id === id)!;
 
@@ -69,6 +70,15 @@ export default function ThesisCard({ t, rank }: { t: Thesis; rank?: number }) {
             v: <>
               <span className="num text-[17px] font-semibold">{t.probability}%</span>
               <span className="num ml-1 text-[11px]" style={{ color: 'var(--color-tertiary)' }}>±{t.probabilityCI}</span>
+              {isProvisional(t.symbol) && (
+                <span
+                  className="label-xs ml-1.5 rounded px-1.5 py-0.5"
+                  style={{ background: 'rgba(232,168,56,0.12)', color: 'var(--color-warn)' }}
+                  title="This instrument has no fitted calibration curve yet. It falls back to the pooled curve, which is known to be inaccurate per-instrument. Treat the probability as provisional until it has 30+ walk-forward trades."
+                >
+                  provisional
+                </span>
+              )}
             </>,
             s: `n=${t.analogue.n} analogues · calibrated`,
           },

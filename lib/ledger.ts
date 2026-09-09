@@ -119,6 +119,10 @@ export const PIP_SIZE: Record<string, number> = {
   XAUUSD: 0.1,      // gold quotes in 0.1 increments
   XAGUSD: 0.01,
   NAS100: 1.0,      // index points
+  AUDUSD: 0.0001,
+  USDCAD: 0.0001,
+  USDCHF: 0.0001,
+  NZDUSD: 0.0001,
 };
 
 export function toPips(symbol: string, priceDelta: number): number {

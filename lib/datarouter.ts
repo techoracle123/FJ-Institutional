@@ -46,14 +46,68 @@ async function fetchJSON<T>(
 // ---------------------------------------------------------------
 export interface FredPoint { date: string; value: number }
 
+let fredMirror: Record<string, FredPoint[]> | null = null;
+let fredMirrorAt = 0;
+
+/**
+ * Load the FRED mirror published by scripts/fetch-fred.mjs.
+ *
+ * FRED's Akamai WAF 403s a subset of Cloudflare edge IPs — per-colo, so
+ * in-Worker retries cannot fix it. Measured ~50% of /api/state requests lost
+ * the whole macro block and suppressed every thesis. The mirror is refreshed
+ * hourly by GitHub Actions (runners are not blocked) and read over the same
+ * contents API the ledger uses.
+ */
+async function loadFredMirror(): Promise<Record<string, FredPoint[]> | null> {
+  if (fredMirror && Date.now() - fredMirrorAt < 900_000) return fredMirror;
+
+  const token = process.env.GITHUB_TOKEN ?? '';
+  const repo = 'techoracle123/FJ-Institutional';
+  try {
+    const r = token
+      ? await fetch(`https://api.github.com/repos/${repo}/contents/data/fred.json`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github.raw',
+            'User-Agent': 'FJInstitutional',
+          },
+          next: { revalidate: 900 },
+        })
+      : await fetch(`https://raw.githubusercontent.com/${repo}/main/data/fred.json`,
+          { next: { revalidate: 900 } });
+    if (r.ok) {
+      const j = (await r.json()) as { series?: Record<string, FredPoint[]> };
+      if (j?.series && Object.keys(j.series).length) {
+        fredMirror = j.series;
+        fredMirrorAt = Date.now();
+        return fredMirror;
+      }
+    }
+  } catch {
+    /* fall through to live FRED */
+  }
+  return fredMirror; // stale beats nothing
+}
+
 export async function fredSeries(id: string, limit = 260): Promise<FredPoint[]> {
   const key = `fred:${id}:${limit}`;
   const hit = getCache<FredPoint[]>(key);
   if (hit) return hit;
-  if (!FRED_KEY) return [];
 
+  // Mirror first — it is the reliable path from the edge.
+  const mirror = await loadFredMirror();
+  const m = mirror?.[id];
+  if (m?.length) {
+    const out = m.slice(0, limit);
+    setCache(key, out, 1800);
+    return out;
+  }
+
+  // Live FRED as fallback (works from unblocked colos and in local dev).
+  if (!FRED_KEY) return [];
   const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${id}&api_key=${FRED_KEY}&file_type=json&limit=${limit}&sort_order=desc`;
-  const j = await fetchJSON<{ observations?: { date: string; value: string }[] }>(url, { revalidate: 1800 });
+  const j = await fetchJSON<{ observations?: { date: string; value: string }[] }>(
+    url, { revalidate: 1800, timeoutMs: 15000 });
   if (!j?.observations) return [];
 
   const out = j.observations
@@ -61,7 +115,7 @@ export async function fredSeries(id: string, limit = 260): Promise<FredPoint[]> 
     .map(o => ({ date: o.date, value: parseFloat(o.value) }))
     .filter(o => Number.isFinite(o.value));
 
-  setCache(key, out, 1800); // 30 min — daily series
+  setCache(key, out, 1800);
   return out;
 }
 
@@ -116,6 +170,7 @@ export const FRED_IDS = {
 const TD_MAP: Record<string, string> = {
   EURUSD: 'EUR/USD', GBPUSD: 'GBP/USD', USDJPY: 'USD/JPY',
   XAUUSD: 'XAU/USD', XAGUSD: 'XAG/USD', NAS100: 'IXIC',
+  AUDUSD: 'AUD/USD', USDCAD: 'USD/CAD', USDCHF: 'USD/CHF', NZDUSD: 'NZD/USD',
 };
 
 export interface RawQuote {
@@ -134,7 +189,7 @@ export async function quote(symbol: string): Promise<RawQuote | null> {
   // only 8 requests/minute in total — polling six symbols exhausts it
   // immediately and returns 429, which is what silently degraded the feed.
   const y = await yahooQuote(symbol);
-  if (y) { setCache(key, y, 20); return y; }
+  if (y) { setCache(key, y, 45); return y; }
 
   // Fallback: Twelve Data, used only when Yahoo fails for a symbol.
   const td = TD_MAP[symbol];
@@ -164,6 +219,7 @@ export async function quote(symbol: string): Promise<RawQuote | null> {
 const YF_MAP: Record<string, string> = {
   EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'JPY=X',
   XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: 'NQ=F',
+  AUDUSD: 'AUDUSD=X', USDCAD: 'USDCAD=X', USDCHF: 'USDCHF=X', NZDUSD: 'NZDUSD=X',
 };
 
 interface YahooChart {
@@ -178,7 +234,7 @@ async function yahooQuote(symbol: string): Promise<RawQuote | null> {
   // (JPY=X reported 160.196, producing a fabricated -4% daily move).
   const j = await fetchJSON<YahooChart>(
     `https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1m&range=1d`,
-    { revalidate: 20, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
+    { revalidate: 45, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
   );
   const m = j?.chart?.result?.[0]?.meta;
   if (!m) return null;
@@ -256,6 +312,8 @@ export async function cotSnapshot(): Promise<CotRow[]> {
   const WANT: Record<string, string> = {
     'EURO FX': 'EURUSD', 'BRITISH POUND': 'GBPUSD', 'JAPANESE YEN': 'USDJPY',
     'GOLD': 'XAUUSD', 'SILVER': 'XAGUSD', 'NASDAQ-100': 'NAS100',
+    'AUSTRALIAN DOLLAR': 'AUDUSD', 'CANADIAN DOLLAR': 'USDCAD',
+    'SWISS FRANC': 'USDCHF', 'NZ DOLLAR': 'NZDUSD',
   };
 
   const seen = new Set<string>();
@@ -301,7 +359,9 @@ export interface CalRow {
 
 /** Which currencies transmit to which of our instruments. */
 const CCY_AFFECTS: Record<string, string[]> = {
-  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100'],
+  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
+        'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'],
+  AUD: ['AUDUSD'], CAD: ['USDCAD'], CHF: ['USDCHF'], NZD: ['NZDUSD'],
   EUR: ['EURUSD'],
   GBP: ['GBPUSD'],
   JPY: ['USDJPY'],

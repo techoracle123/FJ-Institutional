@@ -145,17 +145,25 @@ const EVALS: Record<LayerId, Eval> = {
       detail: 'CFTC positioning is not published for this contract in a form we can map reliably. We do not guess.',
       evidence: [],
     };
+    // CFTC reports positioning in the FOREIGN currency contract (CAD, CHF,
+    // JPY...). For USD-BASE pairs (USDCAD, USDCHF, USDJPY) a net-long CAD
+    // position is a net-SHORT USDCAD position, so the sign must invert or
+    // the layer reads exactly backwards.
+    const usdBase = symbol.startsWith('USD');
+    const net = usdBase ? -row.netNonComm : row.netNonComm;
+    const wk = usdBase ? -row.changeWk : row.changeWk;
+
     // Crowding is contrarian fuel.
-    const sc = clamp(-row.netNonComm / 90000 * 2.4, -3, 3);
-    const side = row.netNonComm >= 0 ? 'net long' : 'net short';
+    const sc = clamp(-net / 90000 * 2.4, -3, 3);
+    const side = net >= 0 ? 'net long' : 'net short';
     return {
       score: sc,
       obs: 'measured',
-      headline: `Managed money ${side} ${Math.abs(row.netNonComm).toLocaleString()}`,
-      detail: `Non-commercial positioning is ${side}. Crowded positioning is squeeze fuel: when everyone owns it, only sellers remain. Week-on-week change of ${row.changeWk >= 0 ? '+' : ''}${row.changeWk.toLocaleString()} contracts.`,
+      headline: `Managed money ${side} ${Math.abs(net).toLocaleString()}`,
+      detail: `Non-commercial positioning is ${side} ${symbol}${usdBase ? ' (CFTC reports the foreign leg; sign inverted for this USD-base pair)' : ''}. Crowded positioning is squeeze fuel: when everyone owns it, only sellers remain. Week-on-week change of ${wk >= 0 ? '+' : ''}${wk.toLocaleString()} contracts.`,
       evidence: [
-        { label: 'Net non-comm', value: row.netNonComm.toLocaleString(), obs: 'measured' },
-        { label: 'Weekly change', value: `${row.changeWk >= 0 ? '+' : ''}${row.changeWk.toLocaleString()}`, obs: 'measured' },
+        { label: 'Net non-comm', value: net.toLocaleString(), obs: 'measured' },
+        { label: 'Weekly change', value: `${wk >= 0 ? '+' : ''}${wk.toLocaleString()}`, obs: 'measured' },
         { label: 'Report date', value: row.asOf, obs: 'measured' },
       ],
     };
@@ -352,6 +360,16 @@ const RECAL: Record<string, { x: number; y: number }[]> = {
   XAGUSD: [{ x: 0.579, y: 0.391 }, { x: 0.631, y: 0.417 }, { x: 0.711, y: 0.438 }],
   NAS100: [{ x: 0.579, y: 0.273 }, { x: 0.668, y: 0.409 }],
 };
+
+/**
+ * Instruments with no fitted curve of their own yet. They fall back to the
+ * pooled curve, which we KNOW compresses every instrument toward ~40% and is
+ * wrong per-instrument. The UI must label these provisional until each has
+ * n >= 30 walk-forward trades from GET /api/backtest.
+ */
+export const PROVISIONAL_CALIBRATION = new Set(['AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD']);
+
+export const isProvisional = (symbol: string) => !RECAL[symbol];
 
 /** Pooled fallback for any instrument without its own fitted curve. */
 const RECAL_POOLED = [{ x: 0.579, y: 0.385 }, { x: 0.666, y: 0.409 }, { x: 0.717, y: 0.424 }];
@@ -561,7 +579,8 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
 }
 
 export function buildBoard(s: MarketState) {
-  const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100'];
+  const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
+    'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
   const theses: Thesis[] = [];
   const noEdge: { symbol: string; reason: string }[] = [];
 

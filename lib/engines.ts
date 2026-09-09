@@ -9,6 +9,7 @@ import type {
   RegimeState, RiskRegime, VolRegime, DollarRegime, LiquidityRegime,
   CrossAssetRow, Anomaly, WhatChanged,
 } from './types';
+import { INSTRUMENTS } from './types';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const pctRank = (v: number, arr: number[]) => {
@@ -37,19 +38,20 @@ export interface MacroSnapshot {
 }
 
 export async function macroSnapshot(): Promise<MacroSnapshot> {
-  const [us2, us10, real10, curve, hy, vix, dxy, be, bs, tga, rrp] = await Promise.all([
-    fredLatest(FRED_IDS.US2Y, 5),
-    fredLatest(FRED_IDS.US10Y, 5),
-    fredLatest(FRED_IDS.REAL10Y, 5),
-    fredLatest(FRED_IDS.CURVE_2S10S, 5),
-    fredLatest(FRED_IDS.HY_OAS, 5),
-    fredLatest(FRED_IDS.VIX, 5),
-    fredLatest(FRED_IDS.DXY, 5),
-    fredLatest(FRED_IDS.BREAKEVEN10Y, 5),
-    fredLatest(FRED_IDS.FED_BS, 2),
-    fredLatest(FRED_IDS.TGA, 2),
-    fredLatest(FRED_IDS.RRP, 2),
-  ]);
+  // Firing all 11 FRED series at once from a Cloudflare edge IP got the burst
+  // throttled, which blanked the whole macro block (dataConfidence 25) and
+  // suppressed every thesis. Batches of 4 keep the burst under the limit.
+  const specs: [string, number][] = [
+    [FRED_IDS.US2Y, 5], [FRED_IDS.US10Y, 5], [FRED_IDS.REAL10Y, 5],
+    [FRED_IDS.CURVE_2S10S, 5], [FRED_IDS.HY_OAS, 5], [FRED_IDS.VIX, 5],
+    [FRED_IDS.DXY, 5], [FRED_IDS.BREAKEVEN10Y, 5], [FRED_IDS.FED_BS, 2],
+    [FRED_IDS.TGA, 2], [FRED_IDS.RRP, 2],
+  ];
+  const res: Awaited<ReturnType<typeof fredLatest>>[] = [];
+  for (let i = 0; i < specs.length; i += 4) {
+    res.push(...await Promise.all(specs.slice(i, i + 4).map(([id, lb]) => fredLatest(id, lb))));
+  }
+  const [us2, us10, real10, curve, hy, vix, dxy, be, bs, tga, rrp] = res;
 
   const vixSeries = vix?.series.map(s => s.value) ?? [];
   const netLiq = bs && tga && rrp ? bs.value / 1000 - tga.value / 1000 - rrp.value : null;
@@ -322,6 +324,44 @@ export function detectAnomalies(m: MacroSnapshot, q: Record<string, RawQuote>): 
       });
     }
   }
+
+  // Risk proxies vs risk assets. AUD and NZD are the highest-beta G10 risk
+  // currencies (measured AUDUSD/NZDUSD rho = +0.84), so if they fall while
+  // equities rally, one of the two is mispricing risk appetite.
+  const aud = q['AUDUSD'], nzd = q['NZDUSD'];
+  if (aud && nzd && nas) {
+    const riskFx = (aud.changePct + nzd.changePct) / 2;
+    if (nas.changePct > 0.5 && riskFx < -0.35) {
+      out.push({
+        id: 'riskfx-equity',
+        title: 'Risk currencies falling while equities rally',
+        detail: `AUD/NZD average ${riskFx.toFixed(2)}% against NDX ${nas.changePct >= 0 ? '+' : ''}${nas.changePct.toFixed(2)}%.`,
+        severity: 'medium',
+        normalRelation: 'AUD and NZD normally track global risk appetite alongside equities.',
+        currentBehaviour: 'Divergent',
+        interpretation: 'Either FX is pricing a growth or China-demand problem equities have not yet acknowledged, or the equity move is narrow and driven by a handful of names.',
+        obs: 'derived',
+      });
+    }
+  }
+
+  // Swiss franc is the cleanest safe-haven read in G10.
+  const chf = q['USDCHF'];
+  if (chf && Number.isFinite(m.vixChg)) {
+    if (chf.changePct < -0.35 && m.vixChg < -0.5) {
+      out.push({
+        id: 'chf-vol',
+        title: 'Franc bid while volatility falls',
+        detail: `USD/CHF ${chf.changePct.toFixed(2)}% with VIX ${m.vixChg.toFixed(2)}.`,
+        severity: 'medium',
+        normalRelation: 'Safe-haven demand for CHF usually rises with volatility, not against it.',
+        currentBehaviour: 'Divergent',
+        interpretation: 'A franc bid without a volatility bid often reflects positioning or SNB-related flow rather than genuine risk aversion.',
+        obs: 'derived',
+      });
+    }
+  }
+
   return out;
 }
 
@@ -367,18 +407,27 @@ export function whatChanged(m: MacroSnapshot, r: RegimeState): WhatChanged[] {
 // COMPOSED MARKET STATE
 // ---------------------------------------------------------------
 export async function marketState() {
-  const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100'];
-  const [m, q, cot, cal] = await Promise.all([macroSnapshot(), quotes(symbols), cotSnapshot(), calendar()]);
+  const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
+    'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
+  // Macro is the backbone: if it fails, every thesis is suppressed. Resolve
+  // it first so its 11 FRED subrequests are not competing with 20 Yahoo
+  // calls for the worker's concurrency budget.
+  const m = await macroSnapshot();
+  const [q, cot, cal] = await Promise.all([quotes(symbols), cotSnapshot(), calendar()]);
   const regime = classifyRegime(m, q);
 
   // PRICE-STRUCTURE regime, per instrument. Distinct from `regime` above,
   // which is the macro risk-on/off read. Research showed identical signals
   // returning -0.07R in chop_high vs -0.81R in trend_low, so structure is
   // a first-class input to thesis quality, not a cosmetic label.
+  // Regime needs ~130 closes, not a full year. At 10 instruments the '1y'
+  // pulls ran concurrently with 11 FRED calls and saturated the worker's
+  // subrequest/time budget, which silently blanked ALL macro data and
+  // dropped dataConfidence to 25. '6mo' is both sufficient and much cheaper.
   const priceRegimes: Record<string, PriceRegime | null> = {};
   await Promise.all(symbols.map(async sym => {
     try {
-      const h = await history(sym, '1y');
+      const h = await history(sym, '6mo');
       const closes = (h ?? []).map(b => b.close).filter(Number.isFinite);
       priceRegimes[sym] = closes.length > 80 ? classifyPriceRegime(closes, 20) : null;
     } catch {
@@ -409,8 +458,11 @@ export function computeDataConfidence(m: MacroSnapshot, q: Record<string, RawQuo
   check(Number.isFinite(m.hyOas), 2);
   check(Number.isFinite(m.vix), 2);
   check(Number.isFinite(m.dxy), 1);
-  check(Object.keys(q).length >= 5, 4);
-  check(Object.keys(q).length === 6, 1);
+  // Scale with the instrument list instead of hardcoding 6, which became
+  // permanently false at 10 instruments and silently docked confidence.
+  const nQ = Object.keys(q).length;
+  check(nQ >= Math.ceil(INSTRUMENTS.length * 0.6), 4);
+  check(nQ === INSTRUMENTS.length, 1);
   return Math.round((score / (total || 1)) * 100);
 }
 
