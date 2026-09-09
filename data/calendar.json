@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-08T06:56:03.303Z",
+  "fetchedAt": "2026-09-09T08:15:37.020Z",
   "events": [
     {
       "time": "2026-09-08T13:15:00.000Z",
@@ -10,17 +10,6 @@
       "prior": null,
       "affects": [
         "GBPUSD"
-      ]
-    },
-    {
-      "time": "2026-09-09T17:00:00.000Z",
-      "title": "ECB President Lagarde Speaks",
-      "currency": "EUR",
-      "impact": "medium",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "EURUSD"
       ]
     },
     {
@@ -58,7 +47,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -74,7 +67,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -90,7 +87,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -116,6 +117,17 @@
       ]
     },
     {
+      "time": "2026-09-11T09:15:00.000Z",
+      "title": "SNB Chairman Schlegel Speaks",
+      "currency": "CHF",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "USDCHF"
+      ]
+    },
+    {
       "time": "2026-09-11T12:30:00.000Z",
       "title": "Core CPI m/m",
       "currency": "USD",
@@ -128,7 +140,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -144,7 +160,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -160,7 +180,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -176,7 +200,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -203,7 +231,11 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -219,11 +251,15 @@
         "USDJPY",
         "XAUUSD",
         "XAGUSD",
-        "NAS100"
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
-      "time": "2026-09-12T07:30:00.000Z",
+      "time": "2026-09-12T08:00:00.000Z",
       "title": "ECB President Lagarde Speaks",
       "currency": "EUR",
       "impact": "medium",
