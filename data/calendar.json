@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-08T17:32:10.842Z",
+  "fetchedAt": "2026-09-09T05:31:46.838Z",
   "events": [
     {
       "time": "2026-09-08T13:15:00.000Z",
@@ -212,7 +212,7 @@
       ]
     },
     {
-      "time": "2026-09-12T07:30:00.000Z",
+      "time": "2026-09-12T08:00:00.000Z",
       "title": "ECB President Lagarde Speaks",
       "currency": "EUR",
       "impact": "medium",
