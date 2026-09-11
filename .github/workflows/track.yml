@@ -41,8 +41,22 @@ jobs:
           git add data/ledger.json
           git commit -m "chore(ledger): tracker update [skip ci]"
           # Tracker runs every 5 min; a racing commit is normal, so rebase.
+          # data/ledger.json is written wholesale by this job and owned by no
+          # one else, so on conflict the freshly-computed file always wins --
+          # a textual merge of a serialised ledger is never meaningful. Without
+          # this the rebase halts on a conflict and every later run fails.
           for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push && exit 0
+            if git pull --rebase --autostash origin main; then
+              git push && exit 0
+            else
+              if [ -n "$(git ls-files -u data/ledger.json)" ]; then
+                git checkout --ours data/ledger.json || git checkout HEAD -- data/ledger.json
+                git add data/ledger.json
+                GIT_EDITOR=true git rebase --continue || git rebase --abort
+              else
+                git rebase --abort 2>/dev/null || true
+              fi
+            fi
             sleep 5
           done
           exit 1
