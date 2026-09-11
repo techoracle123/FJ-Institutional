@@ -196,6 +196,17 @@ export interface Anomaly {
 export interface Instrument {
   symbol: string; display: string; name: string;
   klass: 'fx' | 'metal' | 'index';
+  /**
+   * Whether this instrument may generate a published thesis.
+   *
+   * Measured over 10y of daily bars (see EDGE_RESEARCH.md): the trend +
+   * momentum model that drives the board is strongly NEGATIVE on FX majors
+   * (−260.8R, profitable in 1 of 11 years) and positive on metals/indices
+   * (+95.9R, 6 of 11). Ineligible instruments are still priced, tracked,
+   * charted and used for correlation and dollar-regime context — they are
+   * simply not allowed to produce a trade call we cannot defend.
+   */
+  signalEligible: boolean;
   pip: number; digits: number;
   tvSymbol: string;
   drivers: string[];
@@ -204,18 +215,21 @@ export interface Instrument {
 }
 
 export const INSTRUMENTS: Instrument[] = [
-  { symbol: 'EURUSD', display: 'EUR/USD', name: 'Euro / US Dollar',       klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:EURUSD',    spreadEst: 0.00008, drivers: ['US–DE 2y spread', 'Fed vs ECB path', 'USD positioning'] },
-  { symbol: 'GBPUSD', display: 'GBP/USD', name: 'Pound / US Dollar',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:GBPUSD',    spreadEst: 0.00011, drivers: ['US–UK 2y spread', 'BoE path', 'UK fiscal risk'] },
-  { symbol: 'USDJPY', display: 'USD/JPY', name: 'US Dollar / Yen',        klass: 'fx',    pip: 0.01,   digits: 3, tvSymbol: 'FX:USDJPY',    spreadEst: 0.010, drivers: ['US–JP 10y spread', 'BoJ normalisation', 'Carry & vol'] },
-  { symbol: 'XAUUSD', display: 'XAU/USD', name: 'Gold Spot',              klass: 'metal', pip: 0.1,    digits: 2, tvSymbol: 'OANDA:XAUUSD', spreadEst: 0.28, drivers: ['10y real yield', 'Official-sector demand', 'DXY'] },
-  { symbol: 'XAGUSD', display: 'XAG/USD', name: 'Silver Spot',            klass: 'metal', pip: 0.01,   digits: 3, tvSymbol: 'OANDA:XAGUSD', spreadEst: 0.030, drivers: ['Gold beta', 'Industrial demand', 'By-product supply'] },
-  { symbol: 'NAS100', display: 'NAS100',  name: 'Nasdaq 100 Index',       klass: 'index', pip: 1,      digits: 1, tvSymbol: 'NASDAQ:NDX',   spreadEst: 1.6, drivers: ['10y real yield', 'Mega-cap earnings', 'Dealer gamma'] },
+  { symbol: 'EURUSD', display: 'EUR/USD', name: 'Euro / US Dollar',       klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:EURUSD',    spreadEst: 0.00008, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['US–DE 2y spread', 'Fed vs ECB path', 'USD positioning'] },
+  { symbol: 'GBPUSD', display: 'GBP/USD', name: 'Pound / US Dollar',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:GBPUSD',    spreadEst: 0.00011, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['US–UK 2y spread', 'BoE path', 'UK fiscal risk'] },
+  { symbol: 'USDJPY', display: 'USD/JPY', name: 'US Dollar / Yen',        klass: 'fx',    pip: 0.01,   digits: 3, tvSymbol: 'FX:USDJPY',    spreadEst: 0.010, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['US–JP 10y spread', 'BoJ normalisation', 'Carry & vol'] },
+  { symbol: 'XAUUSD', display: 'XAU/USD', name: 'Gold Spot',              klass: 'metal', pip: 0.1,    digits: 2, tvSymbol: 'OANDA:XAUUSD', spreadEst: 0.28, signalEligible: true, /* measured positive expectancy, 8/11 yrs with trailing exits */ drivers: ['10y real yield', 'Official-sector demand', 'DXY'] },
+  { symbol: 'XAGUSD', display: 'XAG/USD', name: 'Silver Spot',            klass: 'metal', pip: 0.01,   digits: 3, tvSymbol: 'OANDA:XAGUSD', spreadEst: 0.030, signalEligible: true, /* measured positive expectancy, 8/11 yrs with trailing exits */ drivers: ['Gold beta', 'Industrial demand', 'By-product supply'] },
+  { symbol: 'NAS100', display: 'NAS100',  name: 'Nasdaq 100 Index',       klass: 'index', pip: 1,      digits: 1, tvSymbol: 'NASDAQ:NDX',   spreadEst: 1.6, signalEligible: true, /* measured positive expectancy, 8/11 yrs with trailing exits */ drivers: ['10y real yield', 'Mega-cap earnings', 'Dealer gamma'] },
   // spreadEst below are MEASURED medians from Dukascopy tick data across
   // London/NY hours (79k ticks), not assumed values.
-  { symbol: 'AUDUSD', display: 'AUD/USD', name: 'Aussie / US Dollar',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:AUDUSD',    spreadEst: 0.00008, drivers: ['Risk appetite', 'China growth & metals', 'RBA vs Fed path'] },
-  { symbol: 'USDCAD', display: 'USD/CAD', name: 'US Dollar / Loonie',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:USDCAD',    spreadEst: 0.00010, drivers: ['Crude oil terms of trade', 'BoC vs Fed path', 'US–CA 2y spread'] },
-  { symbol: 'USDCHF', display: 'USD/CHF', name: 'US Dollar / Swissie',     klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:USDCHF',    spreadEst: 0.00007, drivers: ['Safe-haven demand', 'SNB policy & intervention', 'US–CH 2y spread'] },
-  { symbol: 'NZDUSD', display: 'NZD/USD', name: 'Kiwi / US Dollar',        klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:NZDUSD',    spreadEst: 0.00009, drivers: ['Risk appetite (highest G10 beta)', 'Dairy & China demand', 'RBNZ vs Fed path'] },
+  { symbol: 'AUDUSD', display: 'AUD/USD', name: 'Aussie / US Dollar',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:AUDUSD',    spreadEst: 0.00008, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['Risk appetite', 'China growth & metals', 'RBA vs Fed path'] },
+  { symbol: 'USDCAD', display: 'USD/CAD', name: 'US Dollar / Loonie',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:USDCAD',    spreadEst: 0.00010, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['Crude oil terms of trade', 'BoC vs Fed path', 'US–CA 2y spread'] },
+  { symbol: 'USDCHF', display: 'USD/CHF', name: 'US Dollar / Swissie',     klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:USDCHF',    spreadEst: 0.00007, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['Safe-haven demand', 'SNB policy & intervention', 'US–CH 2y spread'] },
+  { symbol: 'NZDUSD', display: 'NZD/USD', name: 'Kiwi / US Dollar',        klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:NZDUSD',    spreadEst: 0.00009, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['Risk appetite (highest G10 beta)', 'Dairy & China demand', 'RBNZ vs Fed path'] },
 ];
+
+/** Instruments allowed to produce theses. */
+export const SIGNAL_INSTRUMENTS = INSTRUMENTS.filter(i => i.signalEligible);
 
 export const bySymbol = (s: string) => INSTRUMENTS.find(i => i.symbol === s);

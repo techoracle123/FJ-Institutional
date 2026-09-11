@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { history } from '@/lib/datarouter';
 import { backtest, fitRecalibration, applyRecalibration } from '@/lib/backtest';
-import { INSTRUMENTS } from '@/lib/types';
+import { INSTRUMENTS, SIGNAL_INSTRUMENTS } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -9,7 +9,14 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const only = url.searchParams.get('symbol');
-  const targets = only ? INSTRUMENTS.filter(i => i.symbol === only) : INSTRUMENTS;
+  // Default to signal-eligible instruments only: reporting aggregate stats
+  // over instruments we refuse to trade would misstate the live edge.
+  // ?symbol= still allows inspecting any instrument, and ?all=1 shows the
+  // full set including the suppressed FX majors.
+  const all = url.searchParams.get('all') === '1';
+  const targets = only
+    ? INSTRUMENTS.filter(i => i.symbol === only)
+    : all ? INSTRUMENTS : SIGNAL_INSTRUMENTS;
 
   try {
     const results = await Promise.all(

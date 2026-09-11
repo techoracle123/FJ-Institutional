@@ -7,7 +7,7 @@ import type {
   Thesis, LayerReading, LayerId, Direction, Conviction, ThesisClass,
   EntryQuality, Observability,
 } from './types';
-import { LAYERS, bySymbol } from './types';
+import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS } from './types';
 import type { MarketState } from './engines';
 import type { RawQuote } from './datarouter';
 
@@ -579,8 +579,10 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
 }
 
 export function buildBoard(s: MarketState) {
-  const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
-    'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
+  // Only instruments with measured positive expectancy may produce a call.
+  // The rest still appear as market context (quotes, regimes, correlation).
+  const symbols = SIGNAL_INSTRUMENTS.map(i => i.symbol);
+  const contextOnly = INSTRUMENTS.filter(i => !i.signalEligible);
   const theses: Thesis[] = [];
   const noEdge: { symbol: string; reason: string }[] = [];
 
@@ -597,6 +599,14 @@ export function buildBoard(s: MarketState) {
           : 'Evidence layers conflict — no asymmetric opportunity',
       });
     }
+  }
+
+  // Be explicit about suppression rather than silently omitting them.
+  for (const i of contextOnly) {
+    noEdge.push({
+      symbol: i.symbol,
+      reason: 'Context only — no measured edge for this model on FX majors (10y test)',
+    });
   }
 
   const rank = { 'A+': 4, A: 3, B: 2, C: 1 } as const;

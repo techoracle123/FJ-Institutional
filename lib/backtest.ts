@@ -116,9 +116,20 @@ const calibrateP = (raw: number) =>
 export function backtest(
   symbol: string,
   bars: Bar[],
-  opts: { gate?: number; stopAtr?: number; targetR?: number; maxHold?: number; costR?: number } = {}
+  opts: {
+    gate?: number; stopAtr?: number; targetR?: number; maxHold?: number;
+    costR?: number; trailAtr?: number;
+  } = {}
 ): BacktestResult {
-  const { gate = 0.42, stopAtr = 1.15, targetR = 1.9, maxHold = 12, costR = 0.04 } = opts;
+  // Defaults reflect 10y of measurement (EDGE_RESEARCH.md). A fixed 1.9R
+  // target returned +95.9R across metals/indices; a 2.5x ATR trailing stop
+  // with a 20-bar hold returned +224.8R on the same signals. Hit rate falls
+  // (40.2% -> 33.6%) while profit factor rises (1.12 -> 1.45): the edge is in
+  // the tail, and fixed targets amputate it.
+  const {
+    gate = 0.42, stopAtr = 1.15, targetR = 99, maxHold = 20,
+    costR = 0.04, trailAtr = 2.5,
+  } = opts;
 
   const trades: Trade[] = [];
   let i = 55;
@@ -139,17 +150,30 @@ export function backtest(
     const stop = entry - sign * risk;
     const target = entry + sign * risk * targetR;
 
-    let exit = bars[Math.min(entryBar + maxHold, bars.length - 1)].close;
-    let exitTime = bars[Math.min(entryBar + maxHold, bars.length - 1)].time;
+    const lastIdx = Math.min(entryBar + maxHold, bars.length - 1);
+    let exit = bars[lastIdx].close;
+    let exitTime = bars[lastIdx].time;
     let held = maxHold;
+    // `stop` ratchets when trailing; it never loosens.
+    let live = stop;
 
-    for (let k = entryBar; k <= Math.min(entryBar + maxHold, bars.length - 1); k++) {
+    for (let k = entryBar; k <= lastIdx; k++) {
       const b = bars[k];
-      const hitStop = dir === 'long' ? b.low <= stop : b.high >= stop;
+      const hitStop = dir === 'long' ? b.low <= live : b.high >= live;
       const hitTgt = dir === 'long' ? b.high >= target : b.low <= target;
       // Conservative: if both touched in one bar, assume the stop first.
-      if (hitStop) { exit = stop; exitTime = b.time; held = k - entryBar; break; }
+      if (hitStop) { exit = live; exitTime = b.time; held = k - entryBar; break; }
       if (hitTgt) { exit = target; exitTime = b.time; held = k - entryBar; break; }
+
+      // Trail from the close, one bar in arrears — never using this bar's
+      // extreme to exit this bar, which would be lookahead.
+      if (trailAtr) {
+        const ak = atr(bars, k);
+        if (ak != null) {
+          const cand = b.close - sign * ak * trailAtr;
+          live = dir === 'long' ? Math.max(live, cand) : Math.min(live, cand);
+        }
+      }
     }
 
     const rMul = (sign * (exit - entry)) / risk - costR;

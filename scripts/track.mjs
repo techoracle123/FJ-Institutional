@@ -93,6 +93,71 @@ function rOf(dir, entry, stop, now) {
   return Math.round((raw / risk) * 1000) / 1000;
 }
 
+
+// ---------------------------------------------------------------
+// Telegram — event-driven.
+//
+// Alerts used to fire ONLY from alerts.yml on three fixed daily crons.
+// Theses are published by this tracker every 5 minutes, so any thesis born
+// outside those windows was never announced: measured 6 of 9 (67%) silent.
+// Exits were never announced at all. Both now fire the moment they happen.
+// ---------------------------------------------------------------
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? '';
+const TG_CHAT = process.env.TELEGRAM_CHAT_ID ?? '';
+
+const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+async function tg(text) {
+  if (!TG_TOKEN || !TG_CHAT) { console.log('telegram not configured — skipping'); return false; }
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TG_CHAT, text, parse_mode: 'HTML', disable_web_page_preview: true,
+      }),
+    });
+    const j = await r.json();
+    if (!j.ok) console.error('telegram rejected:', j.description);
+    return !!j.ok;
+  } catch (e) {
+    console.error('telegram failed:', e.message);
+    return false;
+  }
+}
+
+const fmt = (sym, v) => {
+  const d = sym.includes('JPY') ? 3 : (sym === 'NAS100' || sym === 'XAUUSD' || sym === 'XAGUSD') ? 2 : 5;
+  return Number(v).toFixed(d);
+};
+
+function newThesisMsg(t, entry, target, regimeLabel) {
+  const arrow = t.direction === 'long' ? '\u{1F7E2} LONG' : '\u{1F534} SHORT';
+  return [
+    `${arrow} <b>${esc(t.symbol)}</b> \u00B7 ${esc(t.conviction ?? '')}`,
+    `Probability ${t.probability}% \u00B7 R:R ${t.rr}:1 \u00B7 EV ${t.expectedValue}R`,
+    `Entry ${fmt(t.symbol, entry)}`,
+    `Stop ${fmt(t.symbol, t.stop)} \u00B7 Target ${fmt(t.symbol, target)}`,
+    regimeLabel ? `Regime: ${esc(regimeLabel)}` : '',
+    t.headline ? `<i>${esc(t.headline)}</i>` : '',
+    '',
+    '<i>Analysis, not advice. You execute elsewhere.</i>',
+  ].filter(Boolean).join('\n');
+}
+
+function exitMsg(th, tr) {
+  const icon = tr.outcome === 'target' ? '\u2705' : tr.outcome === 'stop' ? '\u{1F6D1}'
+    : tr.outcome === 'ambiguous' ? '\u26A0\uFE0F' : '\u23F1\uFE0F';
+  const word = tr.outcome === 'target' ? 'TARGET HIT' : tr.outcome === 'stop' ? 'STOPPED OUT'
+    : tr.outcome === 'ambiguous' ? 'AMBIGUOUS' : 'EXPIRED';
+  return [
+    `${icon} <b>${word}</b> \u2014 ${esc(th.symbol)} ${esc(th.direction)}`,
+    `Result ${tr.r >= 0 ? '+' : ''}${Number(tr.r).toFixed(2)}R \u00B7 ${tr.pips >= 0 ? '+' : ''}${Math.round(tr.pips)} pips`,
+    `Best ${Number(tr.mfeR).toFixed(2)}R \u00B7 Worst ${Number(tr.maeR).toFixed(2)}R`,
+    `<i>${esc(tr.resolutionReason ?? '')}</i>`,
+  ].join('\n');
+}
+
 async function main() {
   mkdirSync('data', { recursive: true });
   const ledger = loadLedger();
@@ -109,6 +174,7 @@ async function main() {
 
   // ---------- 1. publish new theses ----------
   const liveKeys = new Set();
+  const pending = [];   // Telegram messages, sent only after the ledger is safely written
   let published = 0;
 
   for (const t of state.theses ?? []) {
@@ -194,6 +260,7 @@ async function main() {
       mfeR: 0, maeR: 0, resolvedAt: null, resolutionReason: null, samples: 0,
     });
     published++;
+    pending.push(newThesisMsg(t, entry, target, state.priceRegimes?.[t.symbol]?.label));
   }
 
   // ---------- 2. poll open positions ----------
@@ -234,22 +301,26 @@ async function main() {
       tr.resolvedAt = now;
       tr.resolutionReason = 'Price touched both target and invalidation within one sample; order unknowable';
       resolved++;
+      pending.push(exitMsg(th, tr));
     } else if (hitStop) {
       tr.outcome = 'stop';
       tr.resolvedAt = now;
       tr.r = -1;
       tr.resolutionReason = 'Invalidation level reached';
       resolved++;
+      pending.push(exitMsg(th, tr));
     } else if (hitTarget) {
       tr.outcome = 'target';
       tr.resolvedAt = now;
       tr.resolutionReason = 'First target reached';
       resolved++;
+      pending.push(exitMsg(th, tr));
     } else if (new Date(th.expiresAt).getTime() < Date.now()) {
       tr.outcome = 'expired';
       tr.resolvedAt = now;
       tr.resolutionReason = 'Holding window elapsed without resolution';
       resolved++;
+      pending.push(exitMsg(th, tr));
     }
   }
 
@@ -266,6 +337,15 @@ async function main() {
 
   ledger.updatedAt = now;
   writeFileSync(LEDGER, JSON.stringify(ledger, null, 0));
+
+  // Send only after the ledger is durable. If Telegram is down we lose a
+  // notification, never a record.
+  let sent = 0;
+  for (const msg of pending) {
+    if (await tg(msg)) sent++;
+    await new Promise(r => setTimeout(r, 250)); // stay under Telegram rate limits
+  }
+  if (pending.length) console.log(`telegram sent=${sent}/${pending.length}`);
   console.log(
     `published=${published} updated=${updated} resolved=${resolved} ` +
     `open=${ledger.tracks.filter(t => t.outcome === 'open').length} ` +
