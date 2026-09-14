@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-13T17:30:39.223Z",
+  "fetchedAt": "2026-09-14T05:31:08.084Z",
   "events": [
     {
       "time": "2026-09-14T12:30:00.000Z",
@@ -43,6 +43,17 @@
       "prior": 2.7,
       "affects": [
         "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-09-14T15:15:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
       ]
     },
     {
@@ -123,7 +134,7 @@
       "title": "Federal Funds Rate",
       "currency": "USD",
       "impact": "high",
-      "consensus": null,
+      "consensus": 4,
       "prior": 3.75,
       "affects": [
         "EURUSD",
@@ -335,6 +346,17 @@
       "prior": -0.5,
       "affects": [
         "GBPUSD"
+      ]
+    },
+    {
+      "time": "2026-09-18T10:30:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
       ]
     }
   ]
