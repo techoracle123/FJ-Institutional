@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-14T17:32:36.027Z",
+  "fetchedAt": "2026-09-15T05:32:20.565Z",
   "events": [
     {
       "time": "2026-09-14T12:30:00.000Z",
@@ -258,7 +258,7 @@
       "title": "Philly Fed Manufacturing Index",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 28.9,
+      "consensus": 31.3,
       "prior": 47.4,
       "affects": [
         "EURUSD",
@@ -278,7 +278,7 @@
       "title": "Unemployment Claims",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 209,
+      "consensus": 208,
       "prior": 206,
       "affects": [
         "EURUSD",
