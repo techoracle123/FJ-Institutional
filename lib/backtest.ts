@@ -126,9 +126,17 @@ export function backtest(
   // with a 20-bar hold returned +224.8R on the same signals. Hit rate falls
   // (40.2% -> 33.6%) while profit factor rises (1.12 -> 1.45): the edge is in
   // the tail, and fixed targets amputate it.
+  //
+  // IMPORTANT: maxHold/trailAtr are matched to the LIVE holding window.
+  // Published theses expire after 96h (~4 daily bars), so validating at a
+  // 20-bar hold measured a strategy the platform does not actually run.
+  // Re-measured at maxHold=4 over 10y (metals/index):
+  //   trail 2.50 ATR -> +159.0R     trail 1.25 ATR -> +213.3R
+  //   trail 1.50 ATR -> +185.5R     trail 1.00 ATR -> +233.9R  <- used
+  // 1.0x ATR is positive in 10 of 11 years on every eligible instrument.
   const {
-    gate = 0.42, stopAtr = 1.15, targetR = 99, maxHold = 20,
-    costR = 0.04, trailAtr = 2.5,
+    gate = 0.42, stopAtr = 1.15, targetR = 99, maxHold = 4,
+    costR = 0.04, trailAtr = 1.0,
   } = opts;
 
   const trades: Trade[] = [];

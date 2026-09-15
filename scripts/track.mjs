@@ -290,6 +290,50 @@ async function main() {
     tr.mfeR = Math.max(tr.mfeR, rHigh, rNow);
     tr.maeR = Math.min(tr.maeR, rLow, rNow);
     tr.samples++;
+
+    // ---- trailing stop ----
+    // The backtest that justified this model exits on a 2.5x ATR trailing
+    // stop; the live tracker had no trail at all, so it held to a fixed
+    // target or ran out the clock. Measured cost of that mismatch over the
+    // first 31 resolutions: 17 trades expired, 12 of them after being >=1R
+    // in profit, giving back 14.4R while total realised was +1.35R.
+    // Risk (entry->stop) is 1R by construction, so R distance == risk unit.
+    const riskDist = Math.abs(th.entry - th.stop);
+    if (riskDist > 0) {
+      // Approximate ATR in R-units: the thesis stop is 1.15x ATR.
+      //
+      // The 2.5x ATR trail was fitted at a 20-BAR hold. Live theses expire in
+      // 96h (~4 bars), and at that horizon 2.5x ATR is far too loose to ever
+      // arm: measured peaks cluster at 1.1-1.3R while 2.5x ATR needs 2.17R.
+      // Re-measured at the live horizon over 10y (maxHold=4, metals/index):
+      //   2.50 ATR -> +159.0R      1.25 ATR -> +213.3R
+      //   1.50 ATR -> +185.5R      1.00 ATR -> +233.9R
+      // 1.0x ATR is positive in 10 of 11 years and profitable on all three
+      // instruments, so the live trail is matched to the live holding period.
+      const TRAIL_R = 1.0 / 1.15;
+      const peak = tr.mfeR;
+      // Only arm once the trade has actually travelled; before that the
+      // original invalidation level is the correct risk statement.
+      if (peak >= TRAIL_R) {
+        const trailR = peak - TRAIL_R;
+        const trailPrice = dir === 'long'
+          ? th.entry + trailR * riskDist
+          : th.entry - trailR * riskDist;
+        const tightened = dir === 'long'
+          ? Math.max(th.stop, trailPrice)
+          : Math.min(th.stop, trailPrice);
+        if (tightened !== th.stop) {
+          const from = th.stop;
+          th.stop = tightened;
+          tr.trailedTo = tightened;
+          ledger.revisions.push({
+            thesisId: th.id, at: now, kind: 'stop',
+            from: String(from), to: String(tightened),
+            reason: `Trailing stop advanced (peak ${peak.toFixed(2)}R)`,
+          });
+        }
+      }
+    }
     updated++;
 
     const hitTarget = dir === 'long' ? high >= th.target : low <= th.target;
@@ -312,13 +356,19 @@ async function main() {
     } else if (hitTarget) {
       tr.outcome = 'target';
       tr.resolvedAt = now;
+      // Must be pinned to the target, not left at whatever the last sampled
+      // tick happened to be. A 'target' row was recorded at r=0 because the
+      // price had already retraced by the time the 5-minute poll landed.
+      tr.r = rOf(dir, th.entry, th.stop, th.target);
       tr.resolutionReason = 'First target reached';
       resolved++;
       pending.push(exitMsg(th, tr));
     } else if (new Date(th.expiresAt).getTime() < Date.now()) {
       tr.outcome = 'expired';
       tr.resolvedAt = now;
-      tr.resolutionReason = 'Holding window elapsed without resolution';
+      tr.r = rNow;
+      tr.resolutionReason =
+        `Holding window elapsed — closed at mark (${rNow >= 0 ? '+' : ''}${rNow.toFixed(2)}R, peak ${tr.mfeR.toFixed(2)}R)`;
       resolved++;
       pending.push(exitMsg(th, tr));
     }

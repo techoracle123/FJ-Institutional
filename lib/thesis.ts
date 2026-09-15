@@ -477,6 +477,13 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
   const winR = 0.6 * t1Mult + 0.4 * t2Mult;
   const ev = round2(probability * winR - (1 - probability) * 1.0 - costR);
 
+  // A negative-expectancy call is not an opportunity. The gates above screen
+  // signal STRENGTH, but strength and expectancy are different things: a
+  // strong-but-low-probability read against a tight R:R can clear every gate
+  // and still lose money in expectation. NAS100 was live on the board at
+  // p=29% with EV -0.16R. Silence is a valid output.
+  if (ev <= 0) return null;
+
   // Entry quality — the "don't chase" logic
   const posInRange = range ? (q.price - q.low) / range : 0.5;
   const extension = direction === 'long' ? posInRange : 1 - posInRange;
