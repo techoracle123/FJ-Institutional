@@ -424,3 +424,40 @@ export async function history(symbol: string, range = '5y') {
   setCache(key, out, 21600); // 6h
   return out;
 }
+
+/**
+ * Align a FRED series to daily bars as a trailing N-day change, point-in-time.
+ *
+ * For each bar we take the most recent observation at or before that bar's
+ * date and subtract the most recent observation at or before (date - lagDays).
+ * Only data that existed at the time is ever used, so this is safe to feed
+ * into a backtest.
+ */
+export async function alignedFredChange(
+  barTimes: number[], seriesId: string, lagDays = 20,
+): Promise<(number | null)[]> {
+  const obs = await fredSeries(seriesId, 5000);
+  if (!obs.length) return barTimes.map(() => null);
+
+  // fredSeries returns newest-first; index ascending by date for scanning.
+  const asc = [...obs].reverse();
+  const dates = asc.map(o => o.date);
+  const vals = asc.map(o => o.value);
+
+  const atOrBefore = (iso: string): number | null => {
+    let lo = 0, hi = dates.length - 1, best = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (dates[mid] <= iso) { best = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    return best >= 0 ? vals[best] : null;
+  };
+
+  return barTimes.map(t => {
+    const d = new Date(t * 1000);
+    const now = d.toISOString().slice(0, 10);
+    const prev = new Date(d.getTime() - lagDays * 86400_000).toISOString().slice(0, 10);
+    const a = atOrBefore(now), b = atOrBefore(prev);
+    return a != null && b != null ? a - b : null;
+  });
+}

@@ -91,6 +91,8 @@ export interface Thesis {
   symbol: string;
   direction: Direction;
   klass: ThesisClass;
+  /** Identifier of the placebo-verified cell driving this call, if any. */
+  verifiedCell?: string | null;
   conviction: Conviction;
   /** Calibrated. Always with interval + sample size. Never bare. */
   probability: number;
@@ -231,5 +233,33 @@ export const INSTRUMENTS: Instrument[] = [
 
 /** Instruments allowed to produce theses. */
 export const SIGNAL_INSTRUMENTS = INSTRUMENTS.filter(i => i.signalEligible);
+
+/**
+ * Placebo-controlled verification status, measured over 10y of daily bars.
+ *
+ * A positive backtest is not evidence of edge. A trailing exit on a drifting
+ * asset earns a positive return from RANDOM entries, so every candidate is
+ * compared against a placebo twin: same instrument, same exits, same trade
+ * count, random entry timing and direction.
+ *
+ * Results (research/macrolab.py, 400 placebo reps, 10k-resample bootstrap):
+ *
+ *   NAS100  -real10y(20d)*20 + 0.5*(trend+mom)
+ *           n=631 exp +0.0883R CI90 [+0.021,+0.158] placebo p=0.0010  VERIFIED
+ *           9/11 positive years; sign-flipped control -0.118R (p=0.970)
+ *   XAUUSD  price trend+mom          exp +0.145R placebo +0.097R p=0.180  FAILS
+ *   XAGUSD  price trend+mom          exp +0.194R placebo +0.187R p=0.453  FAILS
+ *
+ * Gold and silver look profitable only because their placebo baseline is
+ * inflated by drift; the signal adds nothing detectable on top. They remain
+ * fully tracked and charted but may not issue a thesis.
+ */
+export const VERIFIED_CELLS: Record<string, { verified: boolean; note: string }> = {
+  NAS100: { verified: true,  note: 'Real-yield cell beats placebo (p=0.001), CI-low +0.021R, 9/11 positive years.' },
+  XAUUSD: { verified: false, note: 'Indistinguishable from random entry timing (placebo p=0.180).' },
+  XAGUSD: { verified: false, note: 'Indistinguishable from random entry timing (placebo p=0.453).' },
+};
+
+export const isVerified = (sym: string) => VERIFIED_CELLS[sym]?.verified === true;
 
 export const bySymbol = (s: string) => INSTRUMENTS.find(i => i.symbol === s);

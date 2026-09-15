@@ -7,7 +7,7 @@ import type {
   Thesis, LayerReading, LayerId, Direction, Conviction, ThesisClass,
   EntryQuality, Observability,
 } from './types';
-import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS } from './types';
+import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS, VERIFIED_CELLS, isVerified } from './types';
 import type { MarketState } from './engines';
 import type { RawQuote } from './datarouter';
 
@@ -419,7 +419,27 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
     num += l.score * w; den += w;
   }
   if (den === 0) return null;
-  const aligned = num / den;
+  let aligned = num / den;
+  let verifiedCell: string | null = null;
+
+  // ---- VERIFIED CELL OVERRIDE ----
+  //
+  // The generic weighted layer stack is NOT what passed verification. Only
+  // one formulation beat its placebo twin, and for one instrument:
+  //
+  //   NAS100 · -real10y(20d)*20 + 0.5*(trend + momentum)
+  //   n=631 · exp +0.0883R · CI90 [+0.021,+0.158] · placebo p=0.0010
+  //   9/11 positive years · sign-flipped control -0.118R (p=0.970)
+  //
+  // Publishing the generic blend while claiming the verified statistics
+  // would be reporting evidence for a model we do not run. So for a verified
+  // instrument the cell formula IS the signal; the layer stack is demoted to
+  // the 0.5-weighted price term it was measured with.
+  if (isVerified(symbol) && Number.isFinite(s.macro.real10yChg20)) {
+    const macroTerm = -s.macro.real10yChg20 * 20;
+    aligned = macroTerm + 0.5 * aligned;
+    verifiedCell = 'real10y-20d';
+  }
 
   // ---- HARD GATES: silence is a valid output ----
   if (s.dataConfidence < 85) return null;
@@ -541,6 +561,7 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
     t2: +t2.toFixed(dgt),
     rr,
     expectedValue: +ev.toFixed(2),
+    verifiedCell,
 
     issuedAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + (klass === 'intraday' ? 8 : 72) * 3600_000).toISOString(),
@@ -588,8 +609,10 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
 export function buildBoard(s: MarketState) {
   // Only instruments with measured positive expectancy may produce a call.
   // The rest still appear as market context (quotes, regimes, correlation).
-  const symbols = SIGNAL_INSTRUMENTS.map(i => i.symbol);
+  // Publishing requires BOTH measured expectancy and a passed placebo test.
+  const symbols = SIGNAL_INSTRUMENTS.filter(i => isVerified(i.symbol)).map(i => i.symbol);
   const contextOnly = INSTRUMENTS.filter(i => !i.signalEligible);
+  const unverified = SIGNAL_INSTRUMENTS.filter(i => !isVerified(i.symbol));
   const theses: Thesis[] = [];
   const noEdge: { symbol: string; reason: string }[] = [];
 
@@ -606,6 +629,15 @@ export function buildBoard(s: MarketState) {
           : 'Evidence layers conflict — no asymmetric opportunity',
       });
     }
+  }
+
+  // Failed the placebo control: the return came from the exit rule, not the
+  // signal. Say so plainly rather than quietly dropping them.
+  for (const i of unverified) {
+    noEdge.push({
+      symbol: i.symbol,
+      reason: VERIFIED_CELLS[i.symbol]?.note ?? 'Has not passed placebo verification.',
+    });
   }
 
   // Be explicit about suppression rather than silently omitting them.
