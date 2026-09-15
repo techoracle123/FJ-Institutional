@@ -22,8 +22,6 @@ export interface MacroSnapshot {
   us2y: number; us2yChg: number;
   us10y: number; us10yChg: number;
   real10y: number; real10yChg: number;
-  /** 20-day change: the horizon used by the verified NAS100 cell. */
-  real10yChg20: number;
   curve: number; curveChg: number;
   hyOas: number; hyOasChg: number;
   vix: number; vixChg: number; vixPct: number;
@@ -48,14 +46,12 @@ export async function macroSnapshot(): Promise<MacroSnapshot> {
     [FRED_IDS.CURVE_2S10S, 5], [FRED_IDS.HY_OAS, 5], [FRED_IDS.VIX, 5],
     [FRED_IDS.DXY, 5], [FRED_IDS.BREAKEVEN10Y, 5], [FRED_IDS.FED_BS, 2],
     [FRED_IDS.TGA, 2], [FRED_IDS.RRP, 2],
-    // Appended last so the destructuring order above stays stable.
-    [FRED_IDS.REAL10Y, 20],  // 20d change: the verified real-yield cell
   ];
   const res: Awaited<ReturnType<typeof fredLatest>>[] = [];
   for (let i = 0; i < specs.length; i += 4) {
     res.push(...await Promise.all(specs.slice(i, i + 4).map(([id, lb]) => fredLatest(id, lb))));
   }
-  const [us2, us10, real10, curve, hy, vix, dxy, be, bs, tga, rrp, real10_20] = res;
+  const [us2, us10, real10, curve, hy, vix, dxy, be, bs, tga, rrp] = res;
 
   const vixSeries = vix?.series.map(s => s.value) ?? [];
   const netLiq = bs && tga && rrp ? bs.value / 1000 - tga.value / 1000 - rrp.value : null;
@@ -64,7 +60,6 @@ export async function macroSnapshot(): Promise<MacroSnapshot> {
     us2y: us2?.value ?? NaN, us2yChg: us2?.change ?? 0,
     us10y: us10?.value ?? NaN, us10yChg: us10?.change ?? 0,
     real10y: real10?.value ?? NaN, real10yChg: real10?.change ?? 0,
-    real10yChg20: real10_20?.change ?? 0,
     curve: curve?.value ?? NaN, curveChg: curve?.change ?? 0,
     hyOas: hy?.value ?? NaN, hyOasChg: hy?.change ?? 0,
     vix: vix?.value ?? NaN, vixChg: vix?.change ?? 0,

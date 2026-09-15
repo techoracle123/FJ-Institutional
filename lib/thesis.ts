@@ -7,7 +7,7 @@ import type {
   Thesis, LayerReading, LayerId, Direction, Conviction, ThesisClass,
   EntryQuality, Observability,
 } from './types';
-import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS, VERIFIED_CELLS, isVerified } from './types';
+import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS, ENTRY_MODEL_VERIFIED } from './types';
 import type { MarketState } from './engines';
 import type { RawQuote } from './datarouter';
 
@@ -419,29 +419,16 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
     num += l.score * w; den += w;
   }
   if (den === 0) return null;
-  let aligned = num / den;
-  let verifiedCell: string | null = null;
-
-  // ---- VERIFIED CELL OVERRIDE ----
-  //
-  // The generic weighted layer stack is NOT what passed verification. Only
-  // one formulation beat its placebo twin, and for one instrument:
-  //
-  //   NAS100 · -real10y(20d)*20 + 0.5*(trend + momentum)
-  //   n=631 · exp +0.0883R · CI90 [+0.021,+0.158] · placebo p=0.0010
-  //   9/11 positive years · sign-flipped control -0.118R (p=0.970)
-  //
-  // Publishing the generic blend while claiming the verified statistics
-  // would be reporting evidence for a model we do not run. So for a verified
-  // instrument the cell formula IS the signal; the layer stack is demoted to
-  // the 0.5-weighted price term it was measured with.
-  if (isVerified(symbol) && Number.isFinite(s.macro.real10yChg20)) {
-    const macroTerm = -s.macro.real10yChg20 * 20;
-    aligned = macroTerm + 0.5 * aligned;
-    verifiedCell = 'real10y-20d';
-  }
+  const aligned = num / den;
 
   // ---- HARD GATES: silence is a valid output ----
+  //
+  // The verification gate comes first and applies to US, not the market.
+  // Until the entry model beats a direction-matched placebo we are not
+  // entitled to issue a directional call, however strong the evidence stack
+  // looks. Suppressing our own product is the honest response to our own
+  // measurement. See ENTRY_MODEL_VERIFIED in types.ts for the numbers.
+  if (!ENTRY_MODEL_VERIFIED) return null;
   if (s.dataConfidence < 85) return null;
   if (Math.abs(aligned) < 0.42) return null;   // no edge
   if (sess.depth === 'thin' && Math.abs(aligned) < 0.85) return null; // thin book needs more
@@ -561,7 +548,6 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
     t2: +t2.toFixed(dgt),
     rr,
     expectedValue: +ev.toFixed(2),
-    verifiedCell,
 
     issuedAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + (klass === 'intraday' ? 8 : 72) * 3600_000).toISOString(),
@@ -609,10 +595,8 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
 export function buildBoard(s: MarketState) {
   // Only instruments with measured positive expectancy may produce a call.
   // The rest still appear as market context (quotes, regimes, correlation).
-  // Publishing requires BOTH measured expectancy and a passed placebo test.
-  const symbols = SIGNAL_INSTRUMENTS.filter(i => isVerified(i.symbol)).map(i => i.symbol);
+  const symbols = SIGNAL_INSTRUMENTS.map(i => i.symbol);
   const contextOnly = INSTRUMENTS.filter(i => !i.signalEligible);
-  const unverified = SIGNAL_INSTRUMENTS.filter(i => !isVerified(i.symbol));
   const theses: Thesis[] = [];
   const noEdge: { symbol: string; reason: string }[] = [];
 
@@ -631,21 +615,27 @@ export function buildBoard(s: MarketState) {
     }
   }
 
-  // Failed the placebo control: the return came from the exit rule, not the
-  // signal. Say so plainly rather than quietly dropping them.
-  for (const i of unverified) {
-    noEdge.push({
-      symbol: i.symbol,
-      reason: VERIFIED_CELLS[i.symbol]?.note ?? 'Has not passed placebo verification.',
-    });
-  }
-
   // Be explicit about suppression rather than silently omitting them.
   for (const i of contextOnly) {
     noEdge.push({
       symbol: i.symbol,
       reason: 'Context only — no measured edge for this model on FX majors (10y test)',
     });
+  }
+
+  // When the whole engine is gated, say exactly why on every instrument
+  // rather than leaving an unexplained empty board.
+  if (!ENTRY_MODEL_VERIFIED) {
+    for (const i of SIGNAL_INSTRUMENTS) {
+      const existing = noEdge.find(n => n.symbol === i.symbol);
+      const reason =
+        'Entry model suspended — it does not beat a random-entry placebo '
+        + '(p=0.28-0.47). Measured profit came from the trailing exit riding '
+        + 'asset drift, not from signal timing. Publication resumes when an '
+        + 'entry passes verification.';
+      if (existing) existing.reason = reason;
+      else noEdge.push({ symbol: i.symbol, reason });
+    }
   }
 
   const rank = { 'A+': 4, A: 3, B: 2, C: 1 } as const;

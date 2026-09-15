@@ -8,6 +8,7 @@ import Regime from '@/components/Regime';
 import Summary from '@/components/Summary';
 import ThesisCard from '@/components/ThesisCard';
 import { Panel, Num, ObsDot, ObsLegend, Empty, Pill, cx, Spark } from '@/components/ui';
+import { VerificationNotice } from '@/components/VerificationNotice';
 
 function QuoteStrip({ quotes, ticks, flash }: { quotes: Record<string, any>; ticks: Record<string, any>; flash: Record<string,'up'|'down'> }) {
   return (
@@ -188,6 +189,9 @@ export default function Now() {
           </div>
         </Panel>
       </div>
+
+      {/* Verification gate — explain an empty board rather than leaving a void. */}
+      {data.theses.length === 0 && <VerificationNotice />}
 
       {/* No edge */}
       {data.noEdge.length > 0 && (

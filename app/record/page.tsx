@@ -6,6 +6,11 @@ interface Res {
   symbol: string; n: number; hitRate: number; totalR: number; avgR: number;
   profitFactor: number; maxDrawdownR: number; sharpe: number; avgBars: number;
   sufficient: boolean; barCount: number; from: number; to: number;
+  verification?: {
+    n: number; expectancy: number; ciLow: number; ciHigh: number;
+    placeboMedian: number; placeboP95: number; pValue: number;
+    verified: boolean; verdict: string;
+  };
   equity: { t: number; r: number }[];
   calibration: { bucket: string; predicted: number; actual: number; n: number }[];
   recent: { entryTime: number; direction: string; r: number; win: boolean; probability: number; reason: string }[];
@@ -98,7 +103,7 @@ export default function Record() {
           <table className="w-full text-[12px]">
             <thead>
               <tr className="label-xs" style={{ color: 'var(--color-quaternary)' }}>
-                {['Instrument', 'Trades', 'Hit', 'Total R', 'Avg R', 'PF', 'Max DD', 'Sharpe'].map((h, i) => (
+                {['Instrument', 'Trades', 'Hit', 'Total R', 'Avg R', 'PF', 'Max DD', 'Sharpe', 'CI-low', 'Placebo p', 'Verified'].map((h, i) => (
                   <th key={h} className={cx('px-4 py-2 font-medium', i === 0 ? 'text-left' : 'text-right')}>{h}</th>
                 ))}
               </tr>
@@ -119,12 +124,53 @@ export default function Record() {
                     style={{ color: r.profitFactor >= 1 ? 'var(--color-long)' : 'var(--color-short)' }}>{r.profitFactor}</td>
                   <td className="num px-4 py-2.5 text-right" style={{ color: 'var(--color-tertiary)' }}>−{r.maxDrawdownR}</td>
                   <td className="num px-4 py-2.5 text-right">{r.sharpe}</td>
+                  <td className="num px-4 py-2.5 text-right"
+                    style={{ color: (r.verification?.ciLow ?? 0) > 0 ? 'var(--color-long)' : 'var(--color-short)' }}>
+                    {r.verification ? (r.verification.ciLow >= 0 ? '+' : '') + r.verification.ciLow.toFixed(3) : '—'}
+                  </td>
+                  <td className="num px-4 py-2.5 text-right"
+                    style={{ color: (r.verification?.pValue ?? 1) < 0.05 ? 'var(--color-long)' : 'var(--color-warn)' }}>
+                    {r.verification ? r.verification.pValue.toFixed(3) : '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <span className="label-xs rounded px-1.5 py-0.5 font-semibold"
+                      style={r.verification?.verified
+                        ? { background: 'var(--color-long)', color: '#04120F' }
+                        : { background: 'rgba(255,176,32,0.15)', color: 'var(--color-warn)' }}>
+                      {r.verification?.verified ? 'VERIFIED' : 'NOT VERIFIED'}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Panel>
+
+      {d.results.filter(r => open === r.symbol && r.verification).map(r => (
+        <div key={r.symbol + '-v'} className="rounded-lg border p-4"
+          style={{ borderColor: 'var(--color-hairline)', background: 'var(--color-raised)' }}>
+          <div className="label-xs mb-2" style={{ color: 'var(--color-quaternary)' }}>
+            {r.symbol} — VERIFICATION
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ['Expectancy', (r.verification!.expectancy >= 0 ? '+' : '') + r.verification!.expectancy.toFixed(3) + 'R'],
+              ['Bootstrap 90% CI', `${r.verification!.ciLow.toFixed(3)} … ${r.verification!.ciHigh.toFixed(3)}R`],
+              ['Random-entry control', (r.verification!.placeboMedian >= 0 ? '+' : '') + r.verification!.placeboMedian.toFixed(3) + 'R'],
+              ['p-value', r.verification!.pValue.toFixed(3)],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <div className="label-xs" style={{ color: 'var(--color-quaternary)' }}>{k}</div>
+                <div className="num text-[13px]">{v}</div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11.5px] leading-relaxed" style={{ color: 'var(--color-tertiary)' }}>
+            {r.verification!.verdict}
+          </p>
+        </div>
+      ))}
 
       {d.results.filter(r => open === r.symbol).map(r => (
         <Panel key={r.symbol} title={`${r.symbol} — equity curve (R)`} dense>

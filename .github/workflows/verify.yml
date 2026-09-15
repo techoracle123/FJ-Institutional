@@ -1,0 +1,50 @@
+name: verify
+
+# Precompute strategy verification (bootstrap CI + direction-matched placebo).
+# This cannot run inside the Worker: ~11M ops per request exceeded the 10ms
+# CPU budget and caused site-wide 503s.
+on:
+  schedule:
+    - cron: '37 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Run verification battery
+        run: node scripts/verify.mjs
+
+      - name: Commit results
+        run: |
+          git config user.name  "fj-bot"
+          git config user.email "fj-bot@users.noreply.github.com"
+          git add data/verification.json
+          if git diff --cached --quiet; then echo "No change."; exit 0; fi
+          git commit -m "chore(data): refresh strategy verification"
+          for i in 1 2 3; do
+            if git pull --rebase --autostash origin main; then
+              git push origin HEAD:main && exit 0
+            else
+              if [ -n "$(git ls-files -u data/verification.json)" ]; then
+                git checkout --ours data/verification.json
+                git add data/verification.json
+                GIT_EDITOR=true git rebase --continue || git rebase --abort
+              else
+                git rebase --abort 2>/dev/null || true
+              fi
+            fi
+            sleep 5
+          done
+          exit 1

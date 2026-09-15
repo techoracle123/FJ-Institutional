@@ -43,30 +43,6 @@ export interface BacktestResult {
   calibration: { bucket: string; predicted: number; actual: number; n: number }[];
   brier: number | null;
   sufficient: boolean;
-  /**
-   * Verification block. A positive backtest is not evidence of edge: a
-   * trailing exit on a drifting asset earns a positive return from RANDOM
-   * entries. Measured on this very engine, random entry timing returned
-   * +0.089R on XAUUSD and +0.193R on XAGUSD -- at or above what the signal
-   * itself produced. Every result must therefore be compared against its own
-   * placebo twin before it may be called an edge.
-   */
-  verification: Verification;
-}
-
-export interface Verification {
-  /** Median mean-R of the placebo twin (random entry, identical exits). */
-  placeboMedian: number;
-  /** P(placebo >= observed). Low means the entry rule carries information. */
-  placeboP: number;
-  /** 90% bootstrap CI on expectancy (10k resamples). */
-  ciLow: number;
-  ciHigh: number;
-  /** Edge over the placebo baseline, in R per trade. */
-  edgeOverPlacebo: number;
-  /** Passes only if it beats its placebo AND its CI floor is above zero. */
-  verified: boolean;
-  reason: string;
 }
 
 const sma = (a: number[], i: number, n: number) => {
@@ -107,16 +83,7 @@ function rsi(closes: number[], i: number, n = 14): number | null {
  * trend (repricing/positioning proxy), momentum persistence, and mean
  * reversion pressure. Scores map onto the same -3…+3 convention.
  */
-/**
- * Macro series aligned to the bar index, supplied by the caller.
- * `real10yD20[i]` is the 20-day change in the 10y TIPS yield as known AT bar
- * i -- point-in-time, no lookahead.
- */
-export interface MacroAligned { real10yD20: (number | null)[] }
-
-function signal(
-  bars: Bar[], i: number, macro?: MacroAligned,
-): { score: number; reason: string } | null {
+function signal(bars: Bar[], i: number): { score: number; reason: string } | null {
   const closes = bars.map(b => b.close);
   const f = sma(closes, i, 20), s = sma(closes, i, 50), r = rsi(closes, i);
   if (f == null || s == null || r == null) return null;
@@ -138,27 +105,6 @@ function signal(
   if (r > 72) { score -= 0.85; parts.push('overbought (RSI ' + r.toFixed(0) + ')'); }
   else if (r < 28) { score += 0.85; parts.push('oversold (RSI ' + r.toFixed(0) + ')'); }
 
-  // ---- macro layer ----
-  //
-  // Price-only trend+momentum does NOT beat a random-entry placebo (measured
-  // p=0.18 gold, p=0.45 silver): the trailing exit was producing the return.
-  // The real 10y yield is the one input that carries information the price
-  // series does not. Verified cell (10y daily, placebo-controlled):
-  //   NAS100 · -real10y(20d)*20 + 0.5*(trend+momentum)
-  //   n=631  exp +0.0883R  CI90 [+0.021,+0.158]  placebo p=0.0010
-  //   9/11 positive years; sign-flipped control returns -0.118R (p=0.970).
-  // Rising real yields compress equity multiples and raise gold's
-  // opportunity cost, so the sign is causal, not fitted.
-  const m = macro?.real10yD20?.[i];
-  if (m != null && Number.isFinite(m)) {
-    score = -m * 20 + 0.5 * score;
-    parts.unshift(
-      m > 0
-        ? `10y real yield +${(m * 100).toFixed(0)}bp over 20d (headwind)`
-        : `10y real yield ${(m * 100).toFixed(0)}bp over 20d (tailwind)`,
-    );
-  }
-
   if (!parts.length) return null;
   return { score, reason: parts.join(', ') };
 }
@@ -167,95 +113,12 @@ function signal(
 const calibrateP = (raw: number) =>
   Math.max(0.34, Math.min(0.72, 0.5 + 0.225 * Math.tanh(Math.abs(raw) / 1.35)));
 
-
-// ---------------------------------------------------------------
-// Verification: placebo twins + bootstrap confidence intervals
-// ---------------------------------------------------------------
-
-/** Deterministic PRNG so verification is reproducible across runs. */
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6D2B79F5) >>> 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/**
- * Placebo twin: same instrument, same exit machinery, same trade count,
- * but entry timing and direction are random. If the strategy cannot beat
- * this, its returns come from the exit rule and the asset's drift, not from
- * the signal.
- */
-function placeboTwin(
-  bars: Bar[], nTrades: number, reps: number,
-  opts: { stopAtr: number; targetR: number; maxHold: number; costR: number; trailAtr: number },
-): number[] {
-  const rnd = mulberry32(0x5EED);
-  const { stopAtr, targetR, maxHold, costR, trailAtr } = opts;
-  const means: number[] = [];
-  const lo = 55, hi = bars.length - maxHold - 2;
-  if (hi <= lo) return [0];
-
-  for (let rep = 0; rep < reps; rep++) {
-    let sum = 0, cnt = 0;
-    for (let k = 0; k < nTrades; k++) {
-      const i = lo + Math.floor(rnd() * (hi - lo));
-      const a = atr(bars, i);
-      if (a == null || !(a > 0)) continue;
-      const sign = rnd() < 0.5 ? 1 : -1;
-      const entryBar = i + 1;
-      const entry = bars[entryBar].open;
-      const risk = a * stopAtr;
-      const target = entry + sign * risk * targetR;
-      let live = entry - sign * risk;
-      const lastIdx = Math.min(entryBar + maxHold, bars.length - 1);
-      let exit = bars[lastIdx].close;
-      for (let j = entryBar; j <= lastIdx; j++) {
-        const b = bars[j];
-        const hitStop = sign > 0 ? b.low <= live : b.high >= live;
-        const hitTgt = sign > 0 ? b.high >= target : b.low <= target;
-        if (hitStop) { exit = live; break; }
-        if (hitTgt) { exit = target; break; }
-        if (trailAtr) {
-          const ak = atr(bars, j);
-          if (ak != null) {
-            const cand = b.close - sign * ak * trailAtr;
-            live = sign > 0 ? Math.max(live, cand) : Math.min(live, cand);
-          }
-        }
-      }
-      sum += (sign * (exit - entry)) / risk - costR;
-      cnt++;
-    }
-    if (cnt) means.push(sum / cnt);
-  }
-  means.sort((x, y) => x - y);
-  return means.length ? means : [0];
-}
-
-/** 90% bootstrap CI on the mean, 10k resamples. */
-function bootstrapCI(rs: number[], reps = 10000): { lo: number; hi: number } {
-  if (rs.length < 2) return { lo: 0, hi: 0 };
-  const rnd = mulberry32(0xB007);
-  const means: number[] = [];
-  for (let r = 0; r < reps; r++) {
-    let s = 0;
-    for (let k = 0; k < rs.length; k++) s += rs[Math.floor(rnd() * rs.length)];
-    means.push(s / rs.length);
-  }
-  means.sort((a, b) => a - b);
-  return { lo: means[Math.floor(0.05 * reps)], hi: means[Math.floor(0.95 * reps)] };
-}
-
 export function backtest(
   symbol: string,
   bars: Bar[],
   opts: {
     gate?: number; stopAtr?: number; targetR?: number; maxHold?: number;
-    costR?: number; trailAtr?: number; macro?: MacroAligned;
+    costR?: number; trailAtr?: number;
   } = {}
 ): BacktestResult {
   // Defaults reflect 10y of measurement (EDGE_RESEARCH.md). A fixed 1.9R
@@ -273,14 +136,14 @@ export function backtest(
   // 1.0x ATR is positive in 10 of 11 years on every eligible instrument.
   const {
     gate = 0.42, stopAtr = 1.15, targetR = 99, maxHold = 4,
-    costR = 0.04, trailAtr = 1.0, macro,
+    costR = 0.04, trailAtr = 1.0,
   } = opts;
 
   const trades: Trade[] = [];
   let i = 55;
 
   while (i < bars.length - 1) {
-    const sig = signal(bars, i, macro);
+    const sig = signal(bars, i);
     const a = atr(bars, i);
     if (!sig || a == null || Math.abs(sig.score) < gate) { i++; continue; }
 
@@ -334,15 +197,10 @@ export function backtest(
     i = entryBar + Math.max(held, 1); // no overlapping positions
   }
 
-  return summarise(symbol, trades, bars, { stopAtr, targetR, maxHold, costR, trailAtr });
+  return summarise(symbol, trades);
 }
 
-function summarise(
-  symbol: string,
-  trades: Trade[],
-  bars?: Bar[],
-  exitOpts?: { stopAtr: number; targetR: number; maxHold: number; costR: number; trailAtr: number },
-): BacktestResult {
+function summarise(symbol: string, trades: Trade[]): BacktestResult {
   const n = trades.length;
   const wins = trades.filter(t => t.win).length;
   const totalR = trades.reduce((a, b) => a + b.r, 0);
@@ -376,36 +234,6 @@ function summarise(
 
   const brier = n ? trades.reduce((a, t) => a + (t.probability - (t.win ? 1 : 0)) ** 2, 0) / n : null;
 
-  // ---- verification ----
-  let verification: Verification = {
-    placeboMedian: 0, placeboP: 1, ciLow: 0, ciHigh: 0,
-    edgeOverPlacebo: 0, verified: false,
-    reason: 'Not enough trades to verify.',
-  };
-  if (n >= 30 && bars && exitOpts) {
-    // Fewer reps than the research harness (400) to stay inside the Worker
-    // CPU budget; 150 is ample to place the observed mean in the placebo
-    // distribution at the resolution we act on.
-    const pm = placeboTwin(bars, n, 150, exitOpts);
-    const placeboMedian = pm[Math.floor(pm.length / 2)];
-    const placeboP = pm.filter(x => x >= mean).length / pm.length;
-    const { lo, hi } = bootstrapCI(trades.map(t => t.r), 4000);
-    const verified = placeboP < 0.05 && lo > 0;
-    verification = {
-      placeboMedian: Math.round(placeboMedian * 1000) / 1000,
-      placeboP: Math.round(placeboP * 1000) / 1000,
-      ciLow: Math.round(lo * 1000) / 1000,
-      ciHigh: Math.round(hi * 1000) / 1000,
-      edgeOverPlacebo: Math.round((mean - placeboMedian) * 1000) / 1000,
-      verified,
-      reason: verified
-        ? 'Beats its placebo twin and the bootstrap floor is above zero.'
-        : placeboP >= 0.05
-          ? `Indistinguishable from random entry timing (p=${placeboP.toFixed(3)}). The exit rule, not the signal, is producing the return.`
-          : `Bootstrap floor ${lo.toFixed(3)}R is not above zero.`,
-    };
-  }
-
   return {
     symbol, trades, n, wins,
     hitRate: n ? Math.round((wins / n) * 1000) / 10 : 0,
@@ -420,7 +248,6 @@ function summarise(
     calibration,
     brier: brier == null ? null : Math.round(brier * 1000) / 1000,
     sufficient: n >= 30,
-    verification,
   };
 }
 
@@ -488,3 +315,72 @@ export function applyRecalibration(p: number, curve: { x: number; y: number }[])
   }
   return p;
 }
+
+// ---------------------------------------------------------------
+// Verification: placebo twins + bootstrap confidence intervals.
+//
+// A backtest that only reports its own expectancy cannot tell you whether the
+// SIGNAL earned the money or the EXIT did. Replace the entry rule with random
+// timing, keep the exit machinery and the long/short mix identical, and
+// re-measure. If the strategy does not clearly beat that control, the entry
+// carries no information and the result is drift plus a trailing stop.
+//
+// This is the test that invalidated FJ's own trend+momentum model: under a
+// direction-matched placebo it scored p=0.30-0.69 on every instrument.
+// ---------------------------------------------------------------
+
+/** Deterministic PRNG so verification output is reproducible across runs. */
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export interface Verification {
+  n: number;
+  expectancy: number;
+  /** 5th/95th percentile of expectancy under 10k bootstrap resamples. */
+  ciLow: number;
+  ciHigh: number;
+  /** Median expectancy of the direction-matched random-entry control. */
+  placeboMedian: number;
+  placeboP95: number;
+  /** P(placebo >= observed). Below 0.05 to be considered informative. */
+  pValue: number;
+  /** True only if the edge clears both the CI floor and the placebo. */
+  verified: boolean;
+  verdict: string;
+}
+
+/** Bootstrap percentile CI on mean R. */
+function bootstrapCI(rs: number[], reps = 2000, seed = 42): [number, number] {
+  if (rs.length < 2) return [0, 0];
+  const rnd = mulberry32(seed);
+  const n = rs.length;
+  const means: number[] = [];
+  for (let b = 0; b < reps; b++) {
+    let s = 0;
+    for (let i = 0; i < n; i++) s += rs[(rnd() * n) | 0];
+    means.push(s / n);
+  }
+  means.sort((x, y) => x - y);
+  return [means[Math.floor(0.05 * reps)], means[Math.floor(0.95 * reps)]];
+}
+
+/**
+ * Direction-matched placebo: same number of trades and the same long/short
+ * mix as the real strategy, but entry bars chosen at random. Matching the
+ * direction mix is essential — these instruments drifted +12.8%/yr to
+ * +19.9%/yr over the sample, so an unmatched long-biased control would
+ * flatter the strategy by attributing pure beta to the signal.
+ */
+/**
+ * NOTE: the placebo runner lives in scripts/verify.mjs and runs nightly in
+ * GitHub Actions, not here. Executing it per-request cost ~11M operations and
+ * exceeded the Worker CPU budget, causing site-wide 503s. lib/verification.ts
+ * reads the precomputed result.
+ */

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { history, alignedFredChange, FRED_IDS } from '@/lib/datarouter';
+import { history } from '@/lib/datarouter';
 import { backtest, fitRecalibration, applyRecalibration } from '@/lib/backtest';
+import { fetchVerification } from '@/lib/verification';
 import { INSTRUMENTS, SIGNAL_INSTRUMENTS } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -19,22 +20,21 @@ export async function GET(req: Request) {
     : all ? INSTRUMENTS : SIGNAL_INSTRUMENTS;
 
   try {
+    // Verification is precomputed nightly by scripts/verify.mjs. Running 10k
+    // bootstrap resamples + 400 placebo replications per instrument inside the
+    // Worker cost ~11M ops per request, blew the 10ms CPU budget and caused
+    // intermittent 503s across the entire site.
+    const verif = await fetchVerification();
     const results = await Promise.all(
       targets.map(async i => {
-        // 10y, not 5y. The verified real-yield cell has a true effect of
-        // ~+0.08R/trade; at 5y (n~320) the bootstrap floor straddles zero and
-        // a real edge reads as unverified. 10y (n~630) resolves it.
-        const bars = await history(i.symbol, '10y');
+        const bars = await history(i.symbol, '5y');
         if (bars.length < 120) return null;
-        // Point-in-time macro, aligned to the bars.
-        const real10yD20 = await alignedFredChange(
-          bars.map(b => b.time), FRED_IDS.REAL10Y, 20);
         const last = bars[bars.length - 1];
-        const r = backtest(i.symbol, bars, {
-          macro: { real10yD20 },
-          costR: Math.max(0.02, i.spreadEst / (last.close * 0.01) || 0.03),
-        });
-        return { ...r, barCount: bars.length, from: bars[0].time, to: last.time };
+        const costR = Math.max(0.02, i.spreadEst / (last.close * 0.01) || 0.03);
+        const r = backtest(i.symbol, bars, { costR });
+        // Every published result carries its own falsification test.
+        const verification = verif?.instruments?.[i.symbol] ?? null;
+        return { ...r, verification, barCount: bars.length, from: bars[0].time, to: last.time };
       })
     );
 

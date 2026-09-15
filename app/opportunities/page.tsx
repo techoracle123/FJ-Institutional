@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Minus } from 'lucide-react';
 import { useMarket } from '@/lib/useState';
 import ThesisCard from '@/components/ThesisCard';
+import { VerificationNotice } from '@/components/VerificationNotice';
 import { Panel, Empty, cx } from '@/components/ui';
 import { bySymbol } from '@/lib/types';
 
@@ -41,8 +42,7 @@ export default function Opportunities() {
       {shown.length ? (
         <div className="space-y-3">{shown.map((t, i) => <ThesisCard key={t.id} t={t} rank={i + 1} />)}</div>
       ) : (
-        <Panel><Empty icon={<Minus size={26} />} title="Nothing meets the bar"
-          body="No instrument currently clears the evidence, liquidity and data-confidence gates. Silence is a valid output." /></Panel>
+        <VerificationNotice />
       )}
 
       {!!data?.noEdge?.length && (
