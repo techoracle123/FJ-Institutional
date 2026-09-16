@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-15T17:31:01.868Z",
+  "fetchedAt": "2026-09-16T05:31:17.821Z",
   "events": [
     {
       "time": "2026-09-14T12:30:00.000Z",
@@ -114,7 +114,7 @@
       "title": "Core Retail Sales m/m",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 0.5,
+      "consensus": 0.6,
       "prior": -0.3,
       "affects": [
         "EURUSD",
@@ -298,7 +298,7 @@
       "title": "Unemployment Claims",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 208,
+      "consensus": 207,
       "prior": 206,
       "affects": [
         "EURUSD",
