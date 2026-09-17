@@ -1,0 +1,47 @@
+name: exitlab
+
+# Exit-discipline research. Paired-entry simulation, 4,000 trades per
+# instrument. Precomputed because the Worker has a 10ms CPU budget.
+on:
+  schedule:
+    - cron: '52 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: exitlab
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Run exit battery
+        run: node scripts/exitlab.mjs
+      - name: Commit
+        run: |
+          git config user.name  "fj-bot"
+          git config user.email "fj-bot@users.noreply.github.com"
+          git add data/exitlab.json
+          if git diff --cached --quiet; then echo "No change."; exit 0; fi
+          git commit -m "chore(data): refresh exit-discipline research"
+          for i in 1 2 3; do
+            if git pull --rebase --autostash origin main; then
+              git push origin HEAD:main && exit 0
+            else
+              if [ -n "$(git ls-files -u data/exitlab.json)" ]; then
+                git checkout --ours data/exitlab.json
+                git add data/exitlab.json
+                GIT_EDITOR=true git rebase --continue || git rebase --abort
+              else
+                git rebase --abort 2>/dev/null || true
+              fi
+            fi
+            sleep 5
+          done
+          exit 1

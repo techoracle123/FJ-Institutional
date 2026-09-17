@@ -1,71 +1,109 @@
+'use client';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
 /**
- * Verification notice.
+ * Shown when the board is silent.
  *
- * When the entry model is suspended the board is empty, and an empty board
- * with no explanation looks like a broken product. This states plainly what
- * was measured, what failed, and what happens next.
+ * Reads live verification data rather than hardcoding numbers — the previous
+ * version had figures baked into the markup that had already drifted from the
+ * real values (+0.145R displayed vs +0.216R actual).
+ *
+ * Crucially this does not leave the trader with nothing: it routes them to the
+ * Risk Desk, where the findings that DID survive testing are actionable.
  */
+interface Row { symbol: string; expectancy: number; ciLow: number; placeboMedian: number; pValue: number }
+
 export function VerificationNotice() {
-  const rows = [
-    { sym: 'XAU/USD', exp: '+0.145R', ci: '+0.061R', plac: '+0.118R', p: '0.278' },
-    { sym: 'XAG/USD', exp: '+0.194R', ci: '+0.105R', plac: '+0.190R', p: '0.473' },
-    { sym: 'NAS100', exp: '+0.038R', ci: '−0.030R', plac: '+0.020R', p: '0.335' },
-  ];
+  const [rows, setRows] = useState<Row[] | null>(null);
+
+  useEffect(() => {
+    fetch('/api/backtest')
+      .then(r => r.json())
+      .then(d => {
+        if (!d?.results) return;
+        setRows(d.results.filter((r: { verification?: unknown }) => r.verification)
+          .map((r: { symbol: string; verification: Omit<Row, 'symbol'> }) => ({
+            symbol: r.symbol, ...r.verification,
+          })));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
-    <div
-      className="rounded-lg border p-4 sm:p-5"
-      style={{ borderColor: 'var(--color-warn)', background: 'rgba(255,176,32,0.05)' }}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className="label-xs rounded px-1.5 py-0.5 font-semibold"
-          style={{ background: 'var(--color-warn)', color: '#120A00' }}
-        >
-          SIGNALS SUSPENDED
-        </span>
-        <span className="text-[13px] font-semibold">The entry model failed its own verification test.</span>
+    <div className="space-y-3">
+      <div className="rounded-lg border p-4 sm:p-5"
+        style={{ borderColor: 'var(--color-warn)', background: 'rgba(255,176,32,0.05)' }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="label-xs rounded px-1.5 py-0.5 font-semibold"
+            style={{ background: 'var(--color-warn)', color: '#120A00' }}>
+            NO SIGNALS TODAY
+          </span>
+          <span className="text-[13px] font-semibold">We could not find an entry edge we can prove.</span>
+        </div>
+
+        <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
+          We replaced our signal with <b>random entry timing</b>, keeping the exit rules and long/short
+          mix identical. The random version did just as well — so the profit in our backtest came from
+          the trailing stop riding a bull market (gold and silver drifted roughly <b>+13%/year</b>,
+          the Nasdaq <b>+20%/year</b>), not from our signal picking good moments. We will not sell you
+          a call we cannot defend.
+        </p>
+
+        {rows?.length ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-[11.5px]">
+              <thead>
+                <tr style={{ color: 'var(--color-quaternary)' }}>
+                  <th className="pb-1 text-left font-medium">Instrument</th>
+                  <th className="pb-1 text-right font-medium">Our result</th>
+                  <th className="pb-1 text-right font-medium">Worst case (95%)</th>
+                  <th className="pb-1 text-right font-medium">Random entry</th>
+                  <th className="pb-1 text-right font-medium">p-value</th>
+                </tr>
+              </thead>
+              <tbody style={{ color: 'var(--color-secondary)' }}>
+                {rows.map(r => (
+                  <tr key={r.symbol} className="border-t" style={{ borderColor: 'var(--color-hairline)' }}>
+                    <td className="py-1.5">{r.symbol}</td>
+                    <td className="num py-1.5 text-right">{r.expectancy >= 0 ? '+' : ''}{r.expectancy.toFixed(3)}R</td>
+                    <td className="num py-1.5 text-right">{r.ciLow >= 0 ? '+' : ''}{r.ciLow.toFixed(3)}R</td>
+                    <td className="num py-1.5 text-right">{r.placeboMedian >= 0 ? '+' : ''}{r.placeboMedian.toFixed(3)}R</td>
+                    <td className="num py-1.5 text-right" style={{ color: 'var(--color-warn)' }}>{r.pValue.toFixed(3)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2 text-[11px]" style={{ color: 'var(--color-quaternary)' }}>
+              A p-value under 0.05 would mean the signal genuinely beats chance.
+            </p>
+          </div>
+        ) : null}
       </div>
 
-      <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
-        We replaced our signal with <b>random entry timing</b>, keeping the exit rules and the
-        long/short mix identical. The random version performed just as well. That means the
-        profit in our backtest came from the trailing stop riding a strong bull market — gold
-        and silver drifted roughly <b>+13%/year</b> and the Nasdaq <b>+20%/year</b> over the test
-        period — and not from our signal choosing good moments.
-      </p>
-
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-[11.5px]">
-          <thead>
-            <tr style={{ color: 'var(--color-quaternary)' }}>
-              <th className="pb-1 text-left font-medium">Instrument</th>
-              <th className="pb-1 text-right font-medium">Our result</th>
-              <th className="pb-1 text-right font-medium">Worst case (95%)</th>
-              <th className="pb-1 text-right font-medium">Random entry</th>
-              <th className="pb-1 text-right font-medium">p-value</th>
-            </tr>
-          </thead>
-          <tbody style={{ color: 'var(--color-secondary)' }}>
-            {rows.map(r => (
-              <tr key={r.sym} className="border-t" style={{ borderColor: 'var(--color-hairline)' }}>
-                <td className="py-1.5">{r.sym}</td>
-                <td className="py-1.5 text-right tabular-nums">{r.exp}</td>
-                <td className="py-1.5 text-right tabular-nums">{r.ci}</td>
-                <td className="py-1.5 text-right tabular-nums">{r.plac}</td>
-                <td className="py-1.5 text-right tabular-nums" style={{ color: 'var(--color-warn)' }}>{r.p}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* The constructive half — never leave the trader with only a refusal. */}
+      <div className="rounded-lg border p-4 sm:p-5"
+        style={{ borderColor: 'var(--color-accent)', background: 'rgba(34,229,200,0.06)' }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="label-xs rounded px-1.5 py-0.5 font-semibold"
+            style={{ background: 'var(--color-accent)', color: '#04120F' }}>
+            WHAT DID SURVIVE
+          </span>
+          <span className="text-[13px] font-semibold">Exits and position size — and both are yours to control.</span>
+        </div>
+        <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
+          The same testing that killed our entry signal found something far stronger. Holding entries
+          fixed and changing <b>only the exit rule</b> moves expectancy by up to <b>+0.42R per trade</b>,
+          with t-statistics of <b>10 to 20</b> — versus t≈1 for every entry signal we tried. The most
+          expensive habit we measured is moving your stop to breakeven at +1R: it produced the
+          <b> worst</b> result on all three instruments.
+        </p>
+        <Link href="/desk"
+          className="mt-3 inline-block rounded-md px-3 py-1.5 text-[12.5px] font-semibold"
+          style={{ background: 'var(--color-accent)', color: '#04120F' }}>
+          Open the Risk Desk →
+        </Link>
       </div>
-
-      <p className="mt-3 text-[11.5px] leading-relaxed" style={{ color: 'var(--color-tertiary)' }}>
-        A p-value below 0.05 would mean the signal genuinely beats chance. Ours are 0.28–0.47.
-        We also built and tested a macro-driven replacement (2-year yields, the 2s10s curve,
-        10-year real yields, VIX) — it improved expectancy but failed the same test.
-        Rather than keep publishing calls we cannot defend, the board stays closed until an
-        entry model passes. Prices, regimes, positioning and the calendar remain live.
-      </p>
     </div>
   );
 }

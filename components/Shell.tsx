@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Activity, Layers, CalendarDays, LineChart, ClipboardList, Radar, Radio } from 'lucide-react';
+import { Activity, Layers, CalendarDays, LineChart, ClipboardList, Radar, Radio, Calculator } from 'lucide-react';
 import { cx, LiveDot } from './ui';
 import AuthButton from './AuthButton';
 import { useSettings } from '@/lib/useSettings';
@@ -12,6 +12,7 @@ const NAV = [
   { href: '/', label: 'Now', icon: Activity },
   { href: '/opportunities', label: 'Opportunities', icon: Layers },
   { href: '/live', label: 'Live', icon: Radio },
+  { href: '/desk', label: 'Risk Desk', icon: Calculator },
   { href: '/markets', label: 'Markets', icon: LineChart },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/record', label: 'Track Record', icon: Radar },
