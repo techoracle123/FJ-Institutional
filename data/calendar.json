@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-17T17:31:14.359Z",
+  "fetchedAt": "2026-09-18T05:30:03.247Z",
   "events": [
     {
       "time": "2026-09-14T12:30:00.000Z",
@@ -325,7 +325,7 @@
       ]
     },
     {
-      "time": "2026-09-18T02:30:00.000Z",
+      "time": "2026-09-18T02:54:00.000Z",
       "title": "BOJ Policy Rate",
       "currency": "JPY",
       "impact": "high",
@@ -336,7 +336,7 @@
       ]
     },
     {
-      "time": "2026-09-18T02:30:00.000Z",
+      "time": "2026-09-18T02:54:00.000Z",
       "title": "Monetary Policy Statement",
       "currency": "JPY",
       "impact": "high",
