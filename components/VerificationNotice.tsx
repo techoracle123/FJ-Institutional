@@ -51,11 +51,12 @@ export function VerificationNotice() {
         </p>
 
         <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
-          We replaced our signal with <b>random entry timing</b>, keeping the exit rules and long/short
-          mix identical. The random version did just as well — so the profit in our backtest came from
-          the trailing stop riding a bull market (gold and silver drifted roughly <b>+13%/year</b>,
-          the Nasdaq <b>+20%/year</b>), not from our signal picking good moments. We will not sell you
-          a call we cannot defend.
+          The table below is the <b>daily</b> model, which is the one that failed. We replaced its
+          signal with <b>random entry timing</b>, keeping the exit rules and long/short mix identical,
+          and the random version did just as well. Its backtest profit came from the trailing stop
+          riding a bull market (gold and silver drifted roughly <b>+13%/year</b>, the Nasdaq
+          <b> +20%/year</b>), not from the signal picking good moments. It stays suspended.
+          The hourly breakout above is a separate model and is <b>not</b> in this table.
         </p>
 
         {rows?.length ? (
@@ -83,7 +84,9 @@ export function VerificationNotice() {
               </tbody>
             </table>
             <p className="mt-2 text-[11px]" style={{ color: 'var(--color-quaternary)' }}>
-              A p-value under 0.05 would mean the signal genuinely beats chance.
+              Daily evidence-stack model only. A p-value under 0.05 means the signal genuinely beats
+              chance &mdash; none of these do, which is why they are silent. For contrast the hourly
+              NAS100 breakout scores <b style={{ color: 'var(--color-accent)' }}>p&lt;0.001</b>.
             </p>
           </div>
         ) : null}
