@@ -426,6 +426,43 @@ export async function history(symbol: string, range = '5y') {
 }
 
 /**
+ * Hourly bars from Yahoo — the SAME source the verified breakout model was
+ * fitted on (NQ=F hourly). This must not be swapped for TwelveData's IXIC:
+ * that is the cash index with no overnight session, a materially different
+ * bar series, and the verification would no longer apply to it.
+ */
+export async function hourly(symbol: string, range = '60d') {
+  const key = `h1:${symbol}:${range}`;
+  const hit = getCache<{ time: number; open: number; high: number; low: number; close: number }[]>(key);
+  if (hit) return hit;
+
+  const yf = YF_MAP[symbol];
+  if (!yf) return [];
+
+  const j = await fetchJSON<{
+    chart?: { result?: { timestamp?: number[]; indicators?: { quote?: { open: (number | null)[]; high: (number | null)[]; low: (number | null)[]; close: (number | null)[] }[] } }[] };
+  }>(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${yf}?interval=1h&range=${range}`,
+    { revalidate: 300, timeoutMs: 20000, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FJInstitutional/1.0)' } }
+  );
+
+  const r = j?.chart?.result?.[0];
+  const q = r?.indicators?.quote?.[0];
+  if (!r?.timestamp || !q) return [];
+
+  const out = r.timestamp
+    .map((t, i) => ({ time: t, open: q.open[i]!, high: q.high[i]!, low: q.low[i]!, close: q.close[i]! }))
+    .filter(b => [b.open, b.high, b.low, b.close].every(v => typeof v === 'number' && Number.isFinite(v)));
+
+  // Drop the still-forming final bar: the model is defined on CLOSED bars.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const closed = out.filter(b => b.time + 3600 <= nowSec);
+
+  setCache(key, closed, 300);
+  return closed;
+}
+
+/**
  * Align a FRED series to daily bars as a trailing N-day change, point-in-time.
  *
  * For each bar we take the most recent observation at or before that bar's

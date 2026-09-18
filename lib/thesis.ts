@@ -8,8 +8,10 @@ import type {
   EntryQuality, Observability,
 } from './types';
 import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS, ENTRY_MODEL_VERIFIED } from './types';
+import { evaluateBreakout, breakoutExpectancy, breakoutProbability, breakoutConviction, BREAKOUT_SPEC, type Bar } from './breakout';
 import type { MarketState } from './engines';
 import type { RawQuote } from './datarouter';
+import { hourly } from './datarouter';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -592,7 +594,128 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
   };
 }
 
-export function buildBoard(s: MarketState) {
+
+/**
+ * VERIFIED ENGINE — builds a thesis from the NAS100 hourly Donchian breakout,
+ * the one entry model that beat a direction-matched placebo (p=0.000,
+ * placebo -0.028R, shorts outperforming longs in a +19.9%/yr uptrend).
+ *
+ * This deliberately bypasses ENTRY_MODEL_VERIFIED: that flag gates the
+ * DAILY evidence-stack model, which remains unverified and silent. This
+ * function is gated by its own verification instead — the numbers in
+ * BREAKOUT_SPEC are the licence to publish.
+ *
+ * The evidence layers are still attached, but as CONTEXT ONLY. They do not
+ * decide direction and they cannot veto the trade. The break decides.
+ * Mixing an unverified model into a verified one would forfeit the
+ * verification.
+ */
+export function buildVerifiedThesis(
+  symbol: string,
+  bars: Bar[],
+  s: MarketState,
+): Thesis | null {
+  if (symbol !== BREAKOUT_SPEC.symbol) return null;
+  const inst = bySymbol(symbol);
+  if (!inst) return null;
+  if (s.dataConfidence < 85) return null;
+
+  const sig = evaluateBreakout(bars);
+  if (!sig) return null;
+
+  const ev = breakoutExpectancy(sig);
+  if (ev <= 0) return null;
+
+  const probability = breakoutProbability(sig);
+  const conviction = breakoutConviction(sig);
+  const dgt = inst.digits;
+  const sess = sessionState();
+  const sign = sig.direction === 'long' ? 1 : -1;
+  const risk = Math.abs(sig.entry - sig.stop);
+  const pad = sig.atr * 0.06;
+
+  const entryQuality: EntryQuality =
+    sig.extensionAtr > 0.75 ? 'late'
+    : sig.extensionAtr > 0.35 ? 'optimal'
+    : sig.extensionAtr > 0.05 ? 'confirmed' : 'early';
+
+  const dirWord = sig.direction === 'long' ? 'Long' : 'Short';
+  const level = sig.direction === 'long' ? sig.channelHigh : sig.channelLow;
+
+  return {
+    id: `${symbol}-brk-${Date.now()}`,
+    symbol,
+    priceRegime: s.priceRegimes?.[symbol] ?? null,
+    direction: sig.direction,
+    klass: 'intraday',
+    conviction,
+    probability: Math.round(probability * 100),
+    probabilityCI: 6,
+    dataConfidence: s.dataConfidence,
+    modelHealth: 'normal',
+    modelVersion: 'breakout-v1.0.0',
+    freshness: Math.round(Math.max(30, 99 - sig.extensionAtr * 45 - sig.barsSinceBreak * 8)),
+    lifecycle: 'confirmed',
+    entryQuality,
+
+    entryLow: +(sig.entry - pad).toFixed(dgt),
+    entryHigh: +(sig.entry + pad).toFixed(dgt),
+    stop: +sig.stop.toFixed(dgt),
+    t1: +sig.t1.toFixed(dgt),
+    t2: +sig.t2.toFixed(dgt),
+    rr: +(Math.abs(sig.t2 - sig.entry) / risk).toFixed(2),
+    expectedValue: +ev.toFixed(2),
+
+    issuedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + BREAKOUT_SPEC.maxHoldHours * 3600_000).toISOString(),
+    expectedHold: 'up to 48 hours — hard time stop',
+
+    headline: `${dirWord} ${inst.display} — ${BREAKOUT_SPEC.lookback}h channel break`,
+    narrative:
+      `${inst.display} closed ${sig.direction === 'long' ? 'above' : 'below'} its `
+      + `${BREAKOUT_SPEC.lookback}-hour ${sig.direction === 'long' ? 'high' : 'low'} at `
+      + `${level.toFixed(dgt)}, ${sig.extensionAtr <= 0.05 ? 'right at the level' : `${sig.extensionAtr.toFixed(2)} ATR beyond it`}. `
+      + `This is the only entry model on the platform that beats a random-entry placebo: `
+      + `across ${BREAKOUT_SPEC.n} historical breaks it returned ${BREAKOUT_SPEC.expectancy.toFixed(3)}R per trade `
+      + `(95% CI +${BREAKOUT_SPEC.ciLow} to +${BREAKOUT_SPEC.ciHigh}, t=${BREAKOUT_SPEC.tStat}, p<0.001) `
+      + `while randomly-timed trades with the same long/short mix and identical exits returned ${BREAKOUT_SPEC.placebo}R. `
+      + `Win rate is only ${(BREAKOUT_SPEC.winRate * 100).toFixed(0)}% — this model pays through a 2:1 payoff, not through being right often. `
+      + `Six of ten losers are normal.`,
+    invalidation: [
+      `Hourly close ${sig.direction === 'long' ? 'below' : 'above'} ${sig.stop.toFixed(dgt)} (1.0 ATR)`,
+      `Price re-enters the ${BREAKOUT_SPEC.lookback}h channel and closes back ${sig.direction === 'long' ? 'under' : 'over'} ${level.toFixed(dgt)}`,
+      `${BREAKOUT_SPEC.maxHoldHours} hours elapse — the model was measured with a hard time stop and holding longer is untested`,
+      'Data confidence falls below 85%',
+    ],
+    whyNow: [
+      `${BREAKOUT_SPEC.lookback}-hour channel broken at ${level.toFixed(dgt)}`,
+      `Entry quality: ${entryQuality} — ${sig.extensionAtr.toFixed(2)} ATR past the level (we do not publish beyond 1.0 ATR)`,
+      `Out-of-sample confirmed: +${BREAKOUT_SPEC.oos.expectancy}R over ${BREAKOUT_SPEC.oos.n} trades never used to build the model (p=${BREAKOUT_SPEC.oos.pValue})`,
+      `Liquidity: ${sess.depth} depth, ${sess.active.join(' + ') || 'no major session'}`,
+    ],
+    mainRisk:
+      'The model has 2.4 years of hourly history — one macro regime. It has never traded '
+      + 'a sustained bear market. Breakout models also degrade in range-bound conditions: '
+      + 'expect clusters of consecutive stop-outs as the channel is repeatedly pierced and rejected.',
+
+    layers: [],
+    analogue: {
+      n: BREAKOUT_SPEC.n,
+      hitRate: Math.round(BREAKOUT_SPEC.winRate * 100),
+      medianMFE: 1.12,
+      medianMAE: 0.58,
+      medianHoldHours: 19,
+      worst: -1.0,
+      bestRegime: s.regime.risk,
+    },
+    accelerationRisk: sess.depth === 'thin' ? 'high' : 'low',
+    accelerationWhy: sess.depth === 'thin'
+      ? 'Thin book — breakouts fail more often outside cash hours and stops slip beyond the modelled 1.0 ATR.'
+      : 'Break occurred with adequate depth; the measured cost of 1.5 index points is already charged against this expectancy.',
+  };
+}
+
+export async function buildBoard(s: MarketState) {
   // Only instruments with measured positive expectancy may produce a call.
   // The rest still appear as market context (quotes, regimes, correlation).
   const symbols = SIGNAL_INSTRUMENTS.map(i => i.symbol);
@@ -623,19 +746,45 @@ export function buildBoard(s: MarketState) {
     });
   }
 
-  // When the whole engine is gated, say exactly why on every instrument
-  // rather than leaving an unexplained empty board.
+  // When the daily evidence-stack engine is gated, say exactly why on every
+  // instrument rather than leaving an unexplained empty board.
   if (!ENTRY_MODEL_VERIFIED) {
     for (const i of SIGNAL_INSTRUMENTS) {
       const existing = noEdge.find(n => n.symbol === i.symbol);
       const reason =
-        'Entry model suspended — it does not beat a random-entry placebo '
-        + '(p=0.28-0.47). Measured profit came from the trailing exit riding '
-        + 'asset drift, not from signal timing. Publication resumes when an '
-        + 'entry passes verification.';
+        'Daily evidence-stack model suspended — it does not beat a random-entry '
+        + 'placebo (p=0.28-0.47). Measured profit came from the trailing exit '
+        + 'riding asset drift, not from signal timing. The verified hourly '
+        + 'breakout engine runs independently and publishes when it triggers.';
       if (existing) existing.reason = reason;
       else noEdge.push({ symbol: i.symbol, reason });
     }
+  }
+
+  // ---- VERIFIED ENGINE ----
+  // The hourly Donchian breakout on NAS100 passed the direction-matched
+  // placebo gate that every other model failed. It publishes on its own
+  // authority, independently of ENTRY_MODEL_VERIFIED above.
+  try {
+    const bars = await hourly(BREAKOUT_SPEC.symbol, '60d');
+    if (bars.length >= BREAKOUT_SPEC.lookback + 20) {
+      const vt = buildVerifiedThesis(BREAKOUT_SPEC.symbol, bars as Bar[], s);
+      if (vt) {
+        theses.push(vt);
+        const k = noEdge.findIndex(n => n.symbol === BREAKOUT_SPEC.symbol);
+        if (k >= 0) noEdge.splice(k, 1);
+      } else {
+        const k = noEdge.findIndex(n => n.symbol === BREAKOUT_SPEC.symbol);
+        const reason =
+          `No ${BREAKOUT_SPEC.lookback}h channel break — verified breakout engine `
+          + 'is armed and watching. It fires only on a genuine break, which is '
+          + 'roughly 859 times in 2.4 years (about 1 per day).';
+        if (k >= 0) noEdge[k].reason = reason;
+        else noEdge.push({ symbol: BREAKOUT_SPEC.symbol, reason });
+      }
+    }
+  } catch {
+    // series() failure must not take the board down
   }
 
   const rank = { 'A+': 4, A: 3, B: 2, C: 1 } as const;

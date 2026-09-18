@@ -1,0 +1,32 @@
+{
+ "strategy": "DON96_ATR1.0_TP2.0_H48",
+ "symbol": "NAS100",
+ "timeframe": "1h",
+ "expectancy": 0.1703,
+ "ciLow": 0.071,
+ "ciHigh": 0.268,
+ "pValue": 0.0,
+ "placebo": -0.0279,
+ "n": 859,
+ "winRate": 0.399,
+ "totalR": 146.3,
+ "tStat": 3.4,
+ "oos": {
+  "n": 325,
+  "exp": 0.1133,
+  "p": 0.03,
+  "totalR": 36.8
+ },
+ "neighbourhood": "25/25 parameter cells positive, median +0.1536R",
+ "byYear": {
+  "2024": 0.221,
+  "2025": 0.127,
+  "2026": 0.129
+ },
+ "longShort": {
+  "long": 0.1514,
+  "short": 0.2114
+ },
+ "verdict": "PASS",
+ "asOf": "2026-09-17"
+}

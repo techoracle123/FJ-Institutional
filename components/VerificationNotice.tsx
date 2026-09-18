@@ -10,7 +10,7 @@ import Link from 'next/link';
  * real values (+0.145R displayed vs +0.216R actual).
  *
  * Crucially this does not leave the trader with nothing: it routes them to the
- * Risk Desk, where the findings that DID survive testing are actionable.
+ * verified breakout engine and the exit findings that DID survive testing.
  */
 interface Row { symbol: string; expectancy: number; ciLow: number; placeboMedian: number; pValue: number }
 
@@ -37,10 +37,18 @@ export function VerificationNotice() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="label-xs rounded px-1.5 py-0.5 font-semibold"
             style={{ background: 'var(--color-warn)', color: '#120A00' }}>
-            NO SIGNALS TODAY
+            DAILY MODEL SUSPENDED
           </span>
-          <span className="text-[13px] font-semibold">We could not find an entry edge we can prove.</span>
+          <span className="text-[13px] font-semibold">The daily evidence-stack model is silent. The verified breakout engine is live and armed.</span>
         </div>
+
+        <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
+          One model <b>did</b> pass verification: the <b>NAS100 96-hour channel breakout</b>. It is armed
+          and will publish the moment it triggers, roughly <b>once a day</b>. Measured over 859 historical
+          breaks it returns <b>+0.170R</b> per trade (95% CI +0.071 to +0.268, t=3.40, p&lt;0.001) against a
+          random-timing placebo of <b>&minus;0.028R</b>. Shorts (+0.211R) beat longs (+0.151R) in a market
+          that rose 19.9%/year &mdash; which is how we know it is timing, not drift.
+        </p>
 
         <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
           We replaced our signal with <b>random entry timing</b>, keeping the exit rules and long/short

@@ -229,12 +229,15 @@ async function main() {
     }
 
     const id = randomUUID();
-    const expires = new Date(Date.now() + (t.klass === 'intraday' ? 12 : 96) * 3600_000);
+    const isBreakout = String(t.modelVersion ?? '').startsWith('breakout');
+    const holdHours = isBreakout ? 48 : (t.klass === 'intraday' ? 12 : 96);
+    const expires = new Date(Date.now() + holdHours * 3600_000);
     ledger.theses.push({
       id, key,
       symbol: t.symbol,
       direction: t.direction,
       klass: t.klass,
+      modelVersion: t.modelVersion ?? 'v1.0.0',
       conviction: t.conviction,
       probability: t.probability,
       entry,
@@ -298,8 +301,14 @@ async function main() {
     // first 31 resolutions: 17 trades expired, 12 of them after being >=1R
     // in profit, giving back 14.4R while total realised was +1.35R.
     // Risk (entry->stop) is 1R by construction, so R distance == risk unit.
+    // The VERIFIED breakout model was measured with a FIXED 1.0 ATR stop and
+    // 2.0 ATR target over a 48h hard time stop — no trail. Adding a trailing
+    // stop here would make live results diverge from the backtest that
+    // justified publication, which is precisely the mistake that cost 30.18R
+    // last time. Its exits are left exactly as specified.
+    const isBrk = String(th.modelVersion ?? '').startsWith('breakout');
     const riskDist = Math.abs(th.entry - th.stop);
-    if (riskDist > 0) {
+    if (riskDist > 0 && !isBrk) {
       // Approximate ATR in R-units: the thesis stop is 1.15x ATR.
       //
       // The 2.5x ATR trail was fitted at a 20-BAR hold. Live theses expire in

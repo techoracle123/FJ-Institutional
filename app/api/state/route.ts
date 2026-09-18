@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const s = await marketState();
-    const board = buildBoard(s);
+    const board = await buildBoard(s);
     const summary = buildSummary(s, board.theses);
     return NextResponse.json(
       { ok: true, ...s, ...board, summary },

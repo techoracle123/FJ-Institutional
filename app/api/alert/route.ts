@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   }
 
   const s = await marketState();
-  const { theses } = buildBoard(s);
+  const { theses } = await buildBoard(s);
   const sum = buildSummary(s, theses);
 
   const L: string[] = [];
