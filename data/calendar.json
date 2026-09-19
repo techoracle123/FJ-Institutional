@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-18T05:30:03.247Z",
+  "fetchedAt": "2026-09-19T05:29:09.054Z",
   "events": [
     {
       "time": "2026-09-14T12:30:00.000Z",
@@ -347,17 +347,6 @@
       ]
     },
     {
-      "time": "2026-09-18T05:30:00.000Z",
-      "title": "BOJ Press Conference",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
       "time": "2026-09-18T06:00:00.000Z",
       "title": "Retail Sales m/m",
       "currency": "GBP",
@@ -366,6 +355,17 @@
       "prior": -0.5,
       "affects": [
         "GBPUSD"
+      ]
+    },
+    {
+      "time": "2026-09-18T06:30:00.000Z",
+      "title": "BOJ Press Conference",
+      "currency": "JPY",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "USDJPY"
       ]
     },
     {
