@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-21T17:30:56.947Z",
+  "fetchedAt": "2026-09-22T05:30:47.655Z",
   "events": [
     {
       "time": "2026-09-21T15:00:00.000Z",
@@ -61,7 +61,7 @@
       "title": "French Flash Services PMI",
       "currency": "EUR",
       "impact": "medium",
-      "consensus": 48.4,
+      "consensus": 48.3,
       "prior": 48.4,
       "affects": [
         "EURUSD"
@@ -72,7 +72,7 @@
       "title": "German Flash Manufacturing PMI",
       "currency": "EUR",
       "impact": "medium",
-      "consensus": 54,
+      "consensus": 54.1,
       "prior": 54.1,
       "affects": [
         "EURUSD"
@@ -94,7 +94,7 @@
       "title": "Flash Manufacturing PMI",
       "currency": "GBP",
       "impact": "medium",
-      "consensus": 51.4,
+      "consensus": 51.5,
       "prior": 51.5,
       "affects": [
         "GBPUSD"
@@ -116,7 +116,7 @@
       "title": "Employment Change",
       "currency": "AUD",
       "impact": "high",
-      "consensus": 20.9,
+      "consensus": 22.5,
       "prior": -15.8,
       "affects": [
         "AUDUSD"
@@ -224,7 +224,7 @@
       "title": "Revised UoM Consumer Sentiment",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 47.5,
+      "consensus": 47.4,
       "prior": 47.8,
       "affects": [
         "EURUSD",
