@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-23T05:30:58.019Z",
+  "fetchedAt": "2026-09-23T17:32:04.678Z",
   "events": [
     {
       "time": "2026-09-21T15:00:00.000Z",
@@ -136,7 +136,7 @@
       "title": "Employment Change",
       "currency": "AUD",
       "impact": "high",
-      "consensus": 22.5,
+      "consensus": 21.5,
       "prior": -15.8,
       "affects": [
         "AUDUSD"
