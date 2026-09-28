@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-28T05:33:28.673Z",
+  "fetchedAt": "2026-09-28T17:33:46.608Z",
   "events": [
     {
       "time": "2026-09-28T13:30:00.000Z",
@@ -393,7 +393,7 @@
       "title": "Non-Farm Employment Change",
       "currency": "USD",
       "impact": "high",
-      "consensus": 98,
+      "consensus": 89,
       "prior": 162,
       "affects": [
         "EURUSD",
