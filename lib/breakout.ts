@@ -58,6 +58,14 @@ import type { Thesis, Direction, Conviction } from './types';
 
 export interface Bar { time: number; open: number; high: number; low: number; close: number }
 
+/** Instruments the model is verified on. Both positive in-sample AND
+ *  out-of-sample, and the PAIR passes the placebo pooled:
+ *    pooled n=1648  exp +0.1250R  CI [+0.056,+0.194]  p=0.000  placebo -0.036R
+ *    IS +0.1518R (n=1033)   OOS +0.0800R (n=615)
+ *  US30 (negative both halves), UK100 (negative IS) and GER40 (OOS collapse
+ *  from +0.231R to +0.042R) were tested and EXCLUDED. */
+export const BREAKOUT_SYMBOLS = ['NAS100', 'SP500'] as const;
+
 export const BREAKOUT_SPEC = {
   symbol: 'NAS100',
   interval: '1h',
@@ -114,6 +122,59 @@ export interface BreakoutSignal {
  * no live break. The break must have occurred on the most recent CLOSED bar
  * or the one before it: we do not chase a channel that broke a day ago.
  */
+export interface ArmedSetup {
+  symbol: string;
+  channelHigh: number;
+  channelLow: number;
+  atr: number;
+  price: number;
+  /** distance to the long trigger, in ATR. negative = already above */
+  toLongAtr: number;
+  toShortAtr: number;
+  /** full pending-order plan for each side */
+  longEntry: number; longStop: number; longT1: number; longT2: number;
+  shortEntry: number; shortStop: number; shortT1: number; shortT2: number;
+  nearest: 'long' | 'short';
+  nearestAtr: number;
+}
+
+/**
+ * The channel levels and the complete pending-order plan for BOTH sides,
+ * whether or not a break has happened yet.
+ *
+ * This is what makes the platform tradeable between signals: a trader can
+ * place resting orders at the trigger instead of watching for an alert.
+ * The levels are the same ones the verified model fires on.
+ */
+export function armedSetup(symbol: string, bars: Bar[]): ArmedSetup | null {
+  const { lookback, stopAtr, targetAtr, atrPeriod } = BREAKOUT_SPEC;
+  if (bars.length < lookback + atrPeriod + 2) return null;
+  const i = bars.length - 1;
+  let hi = -Infinity, lo = Infinity;
+  for (let j = i - lookback; j < i; j++) {
+    if (bars[j].high > hi) hi = bars[j].high;
+    if (bars[j].low < lo) lo = bars[j].low;
+  }
+  const a = atr(bars, atrPeriod);
+  if (!a || a <= 0) return null;
+  const price = bars[i].close;
+
+  const toLong = (hi - price) / a;
+  const toShort = (price - lo) / a;
+
+  return {
+    symbol,
+    channelHigh: hi, channelLow: lo, atr: a, price,
+    toLongAtr: toLong, toShortAtr: toShort,
+    longEntry: hi,  longStop: hi - stopAtr * a,
+    longT1: hi + targetAtr * a * 0.5, longT2: hi + targetAtr * a,
+    shortEntry: lo, shortStop: lo + stopAtr * a,
+    shortT1: lo - targetAtr * a * 0.5, shortT2: lo - targetAtr * a,
+    nearest: toLong <= toShort ? 'long' : 'short',
+    nearestAtr: Math.min(toLong, toShort),
+  };
+}
+
 export function evaluateBreakout(bars: Bar[]): BreakoutSignal | null {
   const { lookback, stopAtr, targetAtr, atrPeriod } = BREAKOUT_SPEC;
   if (bars.length < lookback + atrPeriod + 2) return null;

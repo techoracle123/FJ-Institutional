@@ -8,10 +8,14 @@ import type {
   EntryQuality, Observability,
 } from './types';
 import { LAYERS, bySymbol, INSTRUMENTS, SIGNAL_INSTRUMENTS, ENTRY_MODEL_VERIFIED } from './types';
-import { evaluateBreakout, breakoutExpectancy, breakoutProbability, breakoutConviction, BREAKOUT_SPEC, type Bar } from './breakout';
+import { evaluateBreakout, breakoutExpectancy, breakoutProbability, breakoutConviction, armedSetup, BREAKOUT_SPEC, BREAKOUT_SYMBOLS, type Bar, type ArmedSetup } from './breakout';
 import type { MarketState } from './engines';
 import type { RawQuote } from './datarouter';
 import { hourly } from './datarouter';
+
+/** The daily evidence-stack model remains unverified: it fails the placebo
+ *  gate (p=0.28-0.47). It contributes context, not calls. */
+const DAILY_MODEL_VERIFIED = false;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -430,7 +434,10 @@ export function buildThesis(symbol: string, s: MarketState): Thesis | null {
   // entitled to issue a directional call, however strong the evidence stack
   // looks. Suppressing our own product is the honest response to our own
   // measurement. See ENTRY_MODEL_VERIFIED in types.ts for the numbers.
-  if (!ENTRY_MODEL_VERIFIED) return null;
+  // The daily evidence-stack model has never beaten a direction-matched
+  // placebo (p=0.28-0.47), so it does not issue directional calls. It still
+  // runs: its layers power market context, regimes and the briefing.
+  if (!DAILY_MODEL_VERIFIED) return null;
   if (s.dataConfidence < 85) return null;
   if (Math.abs(aligned) < 0.42) return null;   // no edge
   if (sess.depth === 'thin' && Math.abs(aligned) < 0.85) return null; // thin book needs more
@@ -615,7 +622,7 @@ export function buildVerifiedThesis(
   bars: Bar[],
   s: MarketState,
 ): Thesis | null {
-  if (symbol !== BREAKOUT_SPEC.symbol) return null;
+  if (!(BREAKOUT_SYMBOLS as readonly string[]).includes(symbol)) return null;
   const inst = bySymbol(symbol);
   if (!inst) return null;
   if (s.dataConfidence < 85) return null;
@@ -762,32 +769,44 @@ export async function buildBoard(s: MarketState) {
   }
 
   // ---- VERIFIED ENGINE ----
-  // The hourly Donchian breakout on NAS100 passed the direction-matched
-  // placebo gate that every other model failed. It publishes on its own
-  // authority, independently of ENTRY_MODEL_VERIFIED above.
-  try {
-    const bars = await hourly(BREAKOUT_SPEC.symbol, '60d');
-    if (bars.length >= BREAKOUT_SPEC.lookback + 20) {
-      const vt = buildVerifiedThesis(BREAKOUT_SPEC.symbol, bars as Bar[], s);
+  // The hourly Donchian breakout passed the direction-matched placebo gate
+  // that every other model failed. It publishes on its own authority.
+  //
+  // It also always returns ARMED SETUPS: the live channel levels and a full
+  // pending-order plan for both sides. Between signals the trader still has
+  // something executable, which is the whole point of the product.
+  const setups: ArmedSetup[] = [];
+  for (const sym of BREAKOUT_SYMBOLS) {
+    try {
+      const bars = await hourly(sym, '60d');
+      if (bars.length < BREAKOUT_SPEC.lookback + 20) continue;
+
+      const vt = buildVerifiedThesis(sym, bars as Bar[], s);
       if (vt) {
         theses.push(vt);
-        const k = noEdge.findIndex(n => n.symbol === BREAKOUT_SPEC.symbol);
+        const k = noEdge.findIndex(n => n.symbol === sym);
         if (k >= 0) noEdge.splice(k, 1);
       } else {
-        const k = noEdge.findIndex(n => n.symbol === BREAKOUT_SPEC.symbol);
-        const reason =
-          `No ${BREAKOUT_SPEC.lookback}h channel break — verified breakout engine `
-          + 'is armed and watching. It fires only on a genuine break, which is '
-          + 'roughly 859 times in 2.4 years (about 1 per day).';
-        if (k >= 0) noEdge[k].reason = reason;
-        else noEdge.push({ symbol: BREAKOUT_SPEC.symbol, reason });
+        const setup = armedSetup(sym, bars as Bar[]);
+        if (setup) {
+          setups.push(setup);
+          const dist = setup.nearestAtr;
+          const reason =
+            `Armed — ${setup.nearest} trigger ${setup.nearest === 'long'
+              ? setup.channelHigh.toFixed(bySymbol(sym)?.digits ?? 2)
+              : setup.channelLow.toFixed(bySymbol(sym)?.digits ?? 2)}`
+            + ` (${dist.toFixed(2)} ATR away). Pending-order levels published below.`;
+          const k = noEdge.findIndex(n => n.symbol === sym);
+          if (k >= 0) noEdge[k].reason = reason;
+          else noEdge.push({ symbol: sym, reason });
+        }
       }
+    } catch {
+      // a feed failure on one instrument must not take the board down
     }
-  } catch {
-    // series() failure must not take the board down
   }
 
   const rank = { 'A+': 4, A: 3, B: 2, C: 1 } as const;
   theses.sort((a, b) => (rank[b.conviction] - rank[a.conviction]) || (b.probability - a.probability));
-  return { theses, noEdge };
+  return { theses, noEdge, setups };
 }

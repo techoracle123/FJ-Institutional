@@ -169,7 +169,7 @@ export const FRED_IDS = {
 // ---------------------------------------------------------------
 const TD_MAP: Record<string, string> = {
   EURUSD: 'EUR/USD', GBPUSD: 'GBP/USD', USDJPY: 'USD/JPY',
-  XAUUSD: 'XAU/USD', XAGUSD: 'XAG/USD', NAS100: 'IXIC',
+  XAUUSD: 'XAU/USD', XAGUSD: 'XAG/USD', NAS100: 'IXIC', SP500: 'SPX',
   AUDUSD: 'AUD/USD', USDCAD: 'USD/CAD', USDCHF: 'USD/CHF', NZDUSD: 'NZD/USD',
 };
 
@@ -218,7 +218,7 @@ export async function quote(symbol: string): Promise<RawQuote | null> {
 
 const YF_MAP: Record<string, string> = {
   EURUSD: 'EURUSD=X', GBPUSD: 'GBPUSD=X', USDJPY: 'JPY=X',
-  XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: 'NQ=F',
+  XAUUSD: 'GC=F', XAGUSD: 'SI=F', NAS100: 'NQ=F', SP500: 'ES=F',
   AUDUSD: 'AUDUSD=X', USDCAD: 'USDCAD=X', USDCHF: 'USDCHF=X', NZDUSD: 'NZDUSD=X',
 };
 
@@ -311,7 +311,7 @@ export async function cotSnapshot(): Promise<CotRow[]> {
 
   const WANT: Record<string, string> = {
     'EURO FX': 'EURUSD', 'BRITISH POUND': 'GBPUSD', 'JAPANESE YEN': 'USDJPY',
-    'GOLD': 'XAUUSD', 'SILVER': 'XAGUSD', 'NASDAQ-100': 'NAS100',
+    'GOLD': 'XAUUSD', 'SILVER': 'XAGUSD', 'NASDAQ-100': 'NAS100', 'S&P 500': 'SP500',
     'AUSTRALIAN DOLLAR': 'AUDUSD', 'CANADIAN DOLLAR': 'USDCAD',
     'SWISS FRANC': 'USDCHF', 'NZ DOLLAR': 'NZDUSD',
   };
@@ -359,7 +359,7 @@ export interface CalRow {
 
 /** Which currencies transmit to which of our instruments. */
 const CCY_AFFECTS: Record<string, string[]> = {
-  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
+  USD: ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100', 'SP500',
         'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'],
   AUD: ['AUDUSD'], CAD: ['USDCAD'], CHF: ['USDCHF'], NZD: ['NZDUSD'],
   EUR: ['EURUSD'],

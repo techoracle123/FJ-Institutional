@@ -4,6 +4,7 @@ import { Minus } from 'lucide-react';
 import { useMarket } from '@/lib/useState';
 import ThesisCard from '@/components/ThesisCard';
 import { VerificationNotice } from '@/components/VerificationNotice';
+import { ArmedSetups } from '@/components/ArmedSetups';
 import { Panel, Empty, cx } from '@/components/ui';
 import { bySymbol } from '@/lib/types';
 
@@ -41,9 +42,13 @@ export default function Opportunities() {
 
       {shown.length ? (
         <div className="space-y-3">{shown.map((t, i) => <ThesisCard key={t.id} t={t} rank={i + 1} />)}</div>
-      ) : (
-        <VerificationNotice />
-      )}
+      ) : null}
+
+      {/* Armed setups: the executable plan while the model waits for a break.
+          This is why the board is never empty any more. */}
+      <ArmedSetups setups={data?.setups ?? []} />
+
+      {!shown.length && !data?.setups?.length ? <VerificationNotice /> : null}
 
       {!!data?.noEdge?.length && (
         <Panel title="Screened out" dense>

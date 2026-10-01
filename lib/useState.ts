@@ -7,6 +7,7 @@ export type FullState = MarketState & {
   ok: boolean;
   theses: Thesis[];
   noEdge: { symbol: string; reason: string }[];
+  setups?: import('./breakout').ArmedSetup[];
   summary?: import('./summary').Summary;
 };
 

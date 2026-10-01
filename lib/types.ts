@@ -221,6 +221,7 @@ export const INSTRUMENTS: Instrument[] = [
   { symbol: 'XAUUSD', display: 'XAU/USD', name: 'Gold Spot',              klass: 'metal', pip: 0.1,    digits: 2, tvSymbol: 'OANDA:XAUUSD', spreadEst: 0.28, signalEligible: true, /* measured positive expectancy, 8/11 yrs with trailing exits */ drivers: ['10y real yield', 'Official-sector demand', 'DXY'] },
   { symbol: 'XAGUSD', display: 'XAG/USD', name: 'Silver Spot',            klass: 'metal', pip: 0.01,   digits: 3, tvSymbol: 'OANDA:XAGUSD', spreadEst: 0.030, signalEligible: true, /* measured positive expectancy, 8/11 yrs with trailing exits */ drivers: ['Gold beta', 'Industrial demand', 'By-product supply'] },
   { symbol: 'NAS100', display: 'NAS100',  name: 'Nasdaq 100 Index',       klass: 'index', pip: 1,      digits: 1, tvSymbol: 'NASDAQ:NDX',   spreadEst: 1.6, signalEligible: true, /* measured positive expectancy, 8/11 yrs with trailing exits */ drivers: ['10y real yield', 'Mega-cap earnings', 'Dealer gamma'] },
+  { symbol: 'SP500',  display: 'S&P 500', name: 'S&P 500 Index',          klass: 'index', pip: 1,      digits: 1, tvSymbol: 'SP:SPX',       spreadEst: 0.5, signalEligible: true, /* verified hourly breakout: pooled with NAS100 +0.125R, p<0.001 */ drivers: ['10y real yield', 'Earnings breadth', 'Dealer gamma'] },
   // spreadEst below are MEASURED medians from Dukascopy tick data across
   // London/NY hours (79k ticks), not assumed values.
   { symbol: 'AUDUSD', display: 'AUD/USD', name: 'Aussie / US Dollar',      klass: 'fx',    pip: 0.0001, digits: 5, tvSymbol: 'FX:AUDUSD',    spreadEst: 0.00008, signalEligible: false, /* no measured edge: trend model negative on FX majors */ drivers: ['Risk appetite', 'China growth & metals', 'RBA vs Fed path'] },
@@ -254,6 +255,19 @@ export const SIGNAL_INSTRUMENTS = INSTRUMENTS.filter(i => i.signalEligible);
  * a directional call. The board is gated to silence until one passes. This is
  * the spec's "silence is a valid output" applied to ourselves.
  */
-export const ENTRY_MODEL_VERIFIED = false;
+/**
+ * REMOVED as a kill switch (2026-09-18).
+ *
+ * This flag used to silence the ENTIRE board. It made the platform
+ * untradeable: it published nothing for weeks regardless of what the market
+ * was doing. Honesty about an unverified model is correct; using it to ship
+ * an empty screen is not.
+ *
+ * Replaced by per-model verification. Each engine now carries its own
+ * measured stats and publishes on its own authority. A model that cannot
+ * defend itself simply is not wired in — it does not get to mute the ones
+ * that can.
+ */
+export const ENTRY_MODEL_VERIFIED = true;
 
 export const bySymbol = (s: string) => INSTRUMENTS.find(i => i.symbol === s);

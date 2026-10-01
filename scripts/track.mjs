@@ -127,7 +127,7 @@ async function tg(text) {
 }
 
 const fmt = (sym, v) => {
-  const d = sym.includes('JPY') ? 3 : (sym === 'NAS100' || sym === 'XAUUSD' || sym === 'XAGUSD') ? 2 : 5;
+  const d = sym.includes('JPY') ? 3 : ['NAS100','SP500','US30','GER40','UK100','XAUUSD','XAGUSD'].includes(sym) ? 2 : 5;
   return Number(v).toFixed(d);
 };
 
@@ -392,6 +392,44 @@ async function main() {
   }
   if (ledger.revisions.length > MAX_REVISIONS) {
     ledger.revisions = ledger.revisions.slice(-MAX_REVISIONS);
+  }
+
+  // ---- ARMED SETUP APPROACH ALERTS ----
+  // A breakout is only tradeable if you are at the screen when it happens.
+  // Alert when price comes within 0.35 ATR of a trigger so the trader can
+  // place the resting order BEFORE the break, not read about it after.
+  // One alert per symbol/side/day — never spam.
+  ledger.approachAlerts ??= {};
+  const today = now.slice(0, 10);
+  for (const st of state.setups ?? []) {
+    for (const side of ['long', 'short']) {
+      const dist = side === 'long' ? st.toLongAtr : st.toShortAtr;
+      if (!(dist >= 0 && dist <= 0.35)) continue;
+      const ak = `${st.symbol}|${side}|${today}`;
+      if (ledger.approachAlerts[ak]) continue;
+      ledger.approachAlerts[ak] = now;
+      const entry = side === 'long' ? st.longEntry : st.shortEntry;
+      const stop  = side === 'long' ? st.longStop  : st.shortStop;
+      const t1    = side === 'long' ? st.longT1    : st.shortT1;
+      const t2    = side === 'long' ? st.longT2    : st.shortT2;
+      pending.push(
+        `\u26a0\ufe0f <b>SETUP ARMING \u2014 ${esc(st.symbol)}</b>\n`
+        + `Price ${fmt(st.symbol, st.price)} is ${dist.toFixed(2)} ATR from the `
+        + `${side.toUpperCase()} trigger.\n\n`
+        + `<b>Place a ${side === 'long' ? 'BUY' : 'SELL'} STOP</b>\n`
+        + `Entry  <code>${fmt(st.symbol, entry)}</code>\n`
+        + `Stop   <code>${fmt(st.symbol, stop)}</code>\n`
+        + `T1     <code>${fmt(st.symbol, t1)}</code>\n`
+        + `T2     <code>${fmt(st.symbol, t2)}</code>\n\n`
+        + `96h channel break. Cancel the opposite side if this one fills.`
+      );
+    }
+  }
+  // prune approach keys older than 3 days
+  for (const k of Object.keys(ledger.approachAlerts)) {
+    if ((Date.now() - new Date(ledger.approachAlerts[k]).getTime()) > 3 * 86400_000) {
+      delete ledger.approachAlerts[k];
+    }
   }
 
   ledger.updatedAt = now;
