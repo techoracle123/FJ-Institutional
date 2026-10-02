@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 
 /**
  * Shown when the board is silent.
@@ -92,28 +91,28 @@ export function VerificationNotice() {
         ) : null}
       </div>
 
-      {/* The constructive half — never leave the trader with only a refusal. */}
+      {/* The constructive half - never leave the trader with only a refusal. */}
       <div className="rounded-lg border p-4 sm:p-5"
         style={{ borderColor: 'var(--color-accent)', background: 'rgba(34,229,200,0.06)' }}>
         <div className="flex flex-wrap items-center gap-2">
           <span className="label-xs rounded px-1.5 py-0.5 font-semibold"
             style={{ background: 'var(--color-accent)', color: '#04120F' }}>
-            WHAT DID SURVIVE
+            WHAT TO DO NOW
           </span>
-          <span className="text-[13px] font-semibold">Exits and position size — and both are yours to control.</span>
+          <span className="text-[13px] font-semibold">Rest your orders at the armed levels.</span>
         </div>
         <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
-          The same testing that killed our entry signal found something far stronger. Holding entries
-          fixed and changing <b>only the exit rule</b> moves expectancy by up to <b>+0.42R per trade</b>,
-          with t-statistics of <b>10 to 20</b> — versus t≈1 for every entry signal we tried. The most
-          expensive habit we measured is moving your stop to breakeven at +1R: it produced the
-          <b> worst</b> result on all three instruments.
+          The verified breakout engine publishes its channel levels and a full pending-order plan
+          for both sides at all times, whether or not it has fired. Place them as stop-entry orders
+          and cancel the opposite side when one fills. You will also get a Telegram alert when price
+          comes within <b>0.35 ATR</b> of a trigger, and again the moment it breaks.
         </p>
-        <Link href="/desk"
-          className="mt-3 inline-block rounded-md px-3 py-1.5 text-[12.5px] font-semibold"
-          style={{ background: 'var(--color-accent)', color: '#04120F' }}>
-          Open the Risk Desk →
-        </Link>
+        <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: 'var(--color-secondary)' }}>
+          Exit discipline matters more than entry: holding entries fixed and changing <b>only the
+          exit rule</b> moves expectancy by up to <b>+0.42R per trade</b> (t = 10 to 20), versus
+          t &asymp; 1 for every entry signal tested. The most expensive habit measured is moving your
+          stop to breakeven at +1R &mdash; it was the <b>worst</b> rule on all three instruments.
+        </p>
       </div>
     </div>
   );

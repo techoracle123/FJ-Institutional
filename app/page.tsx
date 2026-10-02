@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, TrendingUp, TrendingDown, Minus, AlertOctagon } from 'lucide-react';
 import { useMarket } from '@/lib/useState';
+import { ArmedSetups } from '@/components/ArmedSetups';
 import { useTicks } from '@/lib/useTicks';
 import { bySymbol, INSTRUMENTS } from '@/lib/types';
 import Regime from '@/components/Regime';
@@ -91,6 +92,10 @@ export default function Now() {
       <QuoteStrip quotes={data.quotes} ticks={ticks} flash={flash} />
 
       {data.summary && <Summary s={data.summary} />}
+
+      {/* The tradeable part comes FIRST. A trader landing here should see the
+          orders they can place before any market context. */}
+      <ArmedSetups setups={data.setups ?? []} />
 
       <Regime r={data.regime} spark={realSpark} />
 

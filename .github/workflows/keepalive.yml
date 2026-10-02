@@ -13,23 +13,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping production intelligence API
+        # Retries. A single transient blip (e.g. a request landing mid-deploy)
+        # used to fail this job, and this is the workflow that keeps every
+        # other cron alive - it must not be brittle.
         run: |
-          code=$(curl -s -o /tmp/state.json -w '%{http_code}' --max-time 90 \
-            https://fjinstitutional.techoracle0.workers.dev/api/state)
-          echo "state HTTP $code"
-          test "$code" = "200"
-          node -e "
-            const d=require('/tmp/state.json');
-            if(!d.ok) throw new Error('API returned ok:false');
-            console.log('data confidence:', d.dataConfidence + '%');
-            console.log('regime:', d.regime.risk);
-            console.log('theses:', d.theses.length);
-            if (d.dataConfidence < 85) console.log('::warning::Data confidence below gate');
-          "
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /tmp/state.json -w '%{http_code}' --max-time 90 \
+              https://fjinstitutional.techoracle0.workers.dev/api/state || echo 000)
+            echo "attempt $attempt: HTTP $code"
+            if [ "$code" = "200" ]; then
+              if node -e "
+                const d=require('/tmp/state.json');
+                if(!d.ok) process.exit(9);
+                console.log('data confidence:', d.dataConfidence + '%');
+                console.log('regime:', d.regime.risk);
+                console.log('theses:', d.theses.length);
+                console.log('armed setups:', (d.setups||[]).length);
+                console.log('instruments quoting:', Object.keys(d.quotes||{}).length);
+                if (d.dataConfidence < 85) console.log('::warning::Data confidence below the 85 gate');
+                if (!d.theses.length && !(d.setups||[]).length) console.log('::warning::Board has neither theses nor armed setups');
+              "; then
+                echo "healthy"
+                exit 0
+              fi
+              echo "api returned ok:false, retrying"
+            fi
+            sleep 20
+          done
+          echo "::error::production /api/state unhealthy after 5 attempts"
+          exit 1
 
       - name: Keep Supabase awake
         env:
           SUPABASE_URL: https://ejnksphnktdacvngjmos.supabase.co
         run: |
           curl -s -o /dev/null -w 'supabase auth HTTP %{http_code}\n' --max-time 30 \
-            "$SUPABASE_URL/auth/v1/health"
+            "$SUPABASE_URL/auth/v1/health" || true
