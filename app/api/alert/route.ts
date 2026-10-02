@@ -32,8 +32,8 @@ export async function GET(req: Request) {
   }
 
   const s = await marketState();
-  const { theses } = await buildBoard(s);
-  const sum = buildSummary(s, theses);
+  const { theses, setups } = await buildBoard(s);
+  const sum = buildSummary(s, theses, setups ?? []);
 
   const L: string[] = [];
   L.push('<b>FJ INSTITUTIONAL</b>');

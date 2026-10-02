@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const s = await marketState();
     const board = await buildBoard(s);
-    const summary = buildSummary(s, board.theses);
+    const summary = buildSummary(s, board.theses, board.setups);
     return NextResponse.json(
       { ok: true, ...s, ...board, summary },
       { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=240' } }

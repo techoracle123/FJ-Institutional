@@ -42,7 +42,7 @@ export function ArmedSetups({ setups }: { setups: ArmedSetup[] }) {
               <div className="flex items-center justify-between">
                 <span className="label-xs font-semibold"
                   style={{ color: dir === 'LONG' ? 'var(--color-up)' : 'var(--color-down)' }}>
-                  {dir} — buy stop {dir === 'LONG' ? 'above' : 'below'}
+                  {dir} &mdash; {dir === 'LONG' ? 'buy stop above' : 'sell stop below'}
                 </span>
                 <span className="num text-[10.5px]" style={{ color: 'var(--color-quaternary)' }}>
                   {dist <= 0 ? 'at level' : `${dist.toFixed(2)} ATR away`}

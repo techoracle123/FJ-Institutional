@@ -1,6 +1,7 @@
 import type { MarketState } from './engines';
 import type { Thesis } from './types';
 import { bySymbol } from './types';
+import type { ArmedSetup } from './breakout';
 import { CALIB_N } from './thesis';
 
 /**
@@ -24,7 +25,7 @@ export interface Summary {
 
 const pct = (v: number, d = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
 
-export function buildSummary(s: MarketState, theses: Thesis[]): Summary {
+export function buildSummary(s: MarketState, theses: Thesis[], setups: ArmedSetup[] = []): Summary {
   const r = s.regime;
   const m = s.macro;
 
@@ -101,11 +102,26 @@ export function buildSummary(s: MarketState, theses: Thesis[]): Summary {
       tone: best.direction === 'long' ? 'pos' : 'neg',
     });
   } else {
-    bullets.push({
-      label: 'No setups',
-      text: 'Nothing clears our evidence and liquidity gates. Staying flat is the correct position.',
-      tone: 'neutral',
-    });
+    if (setups.length) {
+      // The evidence-stack model is silent, but the verified breakout model
+      // always has resting levels. Saying "no setups" here would contradict
+      // the armed orders rendered directly below this summary.
+      const near = [...setups].sort((a, b) => a.nearestAtr - b.nearestAtr)[0];
+      const ni = bySymbol(near.symbol);
+      bullets.push({
+        label: 'Resting orders',
+        text: `${setups.length} instrument${setups.length === 1 ? '' : 's'} armed on the verified breakout model. ` +
+          `Closest is ${ni?.display ?? near.symbol}, ${near.nearestAtr.toFixed(2)} ATR from its ` +
+          `${near.nearest === 'long' ? 'upside' : 'downside'} trigger.`,
+        tone: 'neutral',
+      });
+    } else {
+      bullets.push({
+        label: 'No setups',
+        text: 'Nothing clears our evidence and liquidity gates. Staying flat is the correct position.',
+        tone: 'neutral',
+      });
+    }
   }
 
   // Biggest mover
@@ -143,9 +159,12 @@ export function buildSummary(s: MarketState, theses: Thesis[]): Summary {
 
   let bottomLine: string;
   if (!theses.length) {
-    bottomLine =
-      'There is no edge on the board right now. The evidence across our twelve causal layers is either conflicting or too thin to act on. ' +
-      'Doing nothing is a decision, and today it is the right one.';
+    bottomLine = setups.length
+      ? 'The evidence-stack model has no conviction today — that part of the board is correctly silent. ' +
+        'The verified breakout model is separate and always armed: its channel levels and order plan are below. ' +
+        'Rest the stop-entries, cancel the opposite side when one fills, and let the levels come to you rather than chasing.'
+      : 'There is no edge on the board right now. The evidence across our twelve causal layers is either conflicting or too thin to act on. ' +
+        'Doing nothing is a decision, and today it is the right one.';
   } else {
     const lean = shorts > longs ? 'defensive' : longs > shorts ? 'constructive' : 'two-sided';
     bottomLine =
