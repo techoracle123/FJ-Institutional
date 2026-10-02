@@ -407,8 +407,11 @@ export function whatChanged(m: MacroSnapshot, r: RegimeState): WhatChanged[] {
 // COMPOSED MARKET STATE
 // ---------------------------------------------------------------
 export async function marketState() {
-  const symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'XAGUSD', 'NAS100',
-    'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
+  // Derived from INSTRUMENTS, never hardcoded. A literal list here silently
+  // dropped SP500 when it was added: the instrument existed, its setups
+  // published, but it had no quote and dataConfidence fell to 94. Same class
+  // of bug as the old `nQ === 6` check.
+  const symbols = INSTRUMENTS.map(i => i.symbol);
   // Macro is the backbone: if it fails, every thesis is suppressed. Resolve
   // it first so its 11 FRED subrequests are not competing with 20 Yahoo
   // calls for the worker's concurrency budget.
