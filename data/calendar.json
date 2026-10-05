@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-05T05:40:22.119Z",
+  "fetchedAt": "2026-10-05T17:36:04.244Z",
   "events": [
     {
       "time": "2026-10-05T14:00:00.000Z",
@@ -61,6 +61,37 @@
         "USDCAD",
         "USDCHF",
         "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-10-08T08:30:00.000Z",
+      "title": "FOMC Member Waller Speaks",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-10-08T12:15:00.000Z",
+      "title": "BOE Gov Bailey Speaks",
+      "currency": "GBP",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "GBPUSD"
       ]
     },
     {
