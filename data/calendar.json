@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-05T17:36:04.244Z",
+  "fetchedAt": "2026-10-06T05:34:40.703Z",
   "events": [
     {
       "time": "2026-10-05T14:00:00.000Z",
@@ -119,7 +119,7 @@
       "title": "Employment Change",
       "currency": "CAD",
       "impact": "high",
-      "consensus": 9,
+      "consensus": 6.2,
       "prior": -41.7,
       "affects": [
         "USDCAD"
