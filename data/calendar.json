@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-06T17:35:04.055Z",
+  "fetchedAt": "2026-10-07T11:50:44.961Z",
   "events": [
     {
       "time": "2026-10-05T14:00:00.000Z",
@@ -41,6 +41,26 @@
       "prior": 64.3,
       "affects": [
         "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-10-07T17:00:00.000Z",
+      "title": "President Trump Speaks",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
       ]
     },
     {
@@ -119,7 +139,7 @@
       "title": "Employment Change",
       "currency": "CAD",
       "impact": "high",
-      "consensus": 6.2,
+      "consensus": 6.3,
       "prior": -41.7,
       "affects": [
         "USDCAD"
@@ -141,7 +161,7 @@
       "title": "Prelim UoM Consumer Sentiment",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 47.6,
+      "consensus": 47.5,
       "prior": 47.8,
       "affects": [
         "EURUSD",
