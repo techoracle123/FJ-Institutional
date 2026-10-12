@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-12T13:16:08.740Z",
+  "fetchedAt": "2026-10-12T23:39:19.941Z",
   "events": [
     {
       "time": "2026-10-14T02:10:00.000Z",
@@ -130,7 +130,7 @@
       "title": "Employment Change",
       "currency": "AUD",
       "impact": "high",
-      "consensus": 20,
+      "consensus": 19.6,
       "prior": 39.5,
       "affects": [
         "AUDUSD"
@@ -205,7 +205,7 @@
       "title": "Core Retail Sales m/m",
       "currency": "USD",
       "impact": "high",
-      "consensus": 0.5,
+      "consensus": 0.6,
       "prior": 1.4,
       "affects": [
         "EURUSD",
@@ -225,7 +225,7 @@
       "title": "PPI m/m",
       "currency": "USD",
       "impact": "high",
-      "consensus": 0.5,
+      "consensus": 0.6,
       "prior": 0.4,
       "affects": [
         "EURUSD",
@@ -265,7 +265,7 @@
       "title": "Philly Fed Manufacturing Index",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 26.5,
+      "consensus": 28.2,
       "prior": 37.8,
       "affects": [
         "EURUSD",
@@ -285,7 +285,7 @@
       "title": "Unemployment Claims",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 195,
+      "consensus": 199,
       "prior": 197,
       "affects": [
         "EURUSD",
