@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-12T23:39:19.941Z",
+  "fetchedAt": "2026-10-13T12:46:38.998Z",
   "events": [
     {
       "time": "2026-10-14T02:10:00.000Z",
@@ -37,6 +37,17 @@
     {
       "time": "2026-10-14T08:30:00.000Z",
       "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-10-14T10:15:00.000Z",
+      "title": "EU Economic Summit",
       "currency": "EUR",
       "impact": "medium",
       "consensus": null,
@@ -178,6 +189,17 @@
       "prior": null,
       "affects": [
         "GBPUSD"
+      ]
+    },
+    {
+      "time": "2026-10-15T10:15:00.000Z",
+      "title": "EU Economic Summit",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
       ]
     },
     {
