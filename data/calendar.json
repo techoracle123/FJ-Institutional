@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-21T10:17:07.482Z",
+  "fetchedAt": "2026-10-21T20:42:32.235Z",
   "events": [
     {
       "time": "2026-10-19T12:30:00.000Z",
@@ -211,7 +211,7 @@
       "title": "Flash Services PMI",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 57.8,
+      "consensus": 57.9,
       "prior": 58.7,
       "affects": [
         "EURUSD",
