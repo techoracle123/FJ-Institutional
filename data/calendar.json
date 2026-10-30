@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-29T21:52:19.892Z",
+  "fetchedAt": "2026-10-30T11:27:32.434Z",
   "events": [
     {
       "time": "2026-10-27T14:00:00.000Z",
@@ -349,29 +349,7 @@
       ]
     },
     {
-      "time": "2026-10-30T02:30:00.000Z",
-      "title": "BOJ Policy Rate",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": 1.25,
-      "prior": 1.25,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T02:30:00.000Z",
-      "title": "Monetary Policy Statement",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T02:31:00.000Z",
+      "time": "2026-10-30T03:02:00.000Z",
       "title": "BOJ Outlook Report",
       "currency": "JPY",
       "impact": "high",
@@ -382,7 +360,29 @@
       ]
     },
     {
-      "time": "2026-10-30T05:30:00.000Z",
+      "time": "2026-10-30T03:02:00.000Z",
+      "title": "BOJ Policy Rate",
+      "currency": "JPY",
+      "impact": "high",
+      "consensus": 1.25,
+      "prior": 1.25,
+      "affects": [
+        "USDJPY"
+      ]
+    },
+    {
+      "time": "2026-10-30T03:02:00.000Z",
+      "title": "Monetary Policy Statement",
+      "currency": "JPY",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "USDJPY"
+      ]
+    },
+    {
+      "time": "2026-10-30T06:30:00.000Z",
       "title": "BOJ Press Conference",
       "currency": "JPY",
       "impact": "high",
