@@ -1,13 +1,13 @@
 {
-  "fetchedAt": "2026-10-31T20:29:51.034Z",
+  "fetchedAt": "2026-11-01T11:53:38.169Z",
   "events": [
     {
-      "time": "2026-10-27T14:00:00.000Z",
-      "title": "CB Consumer Confidence",
+      "time": "2026-11-02T15:00:00.000Z",
+      "title": "ISM Manufacturing PMI",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 81.2,
-      "prior": 81.9,
+      "consensus": 54.7,
+      "prior": 54.5,
       "affects": [
         "EURUSD",
         "GBPUSD",
@@ -22,10 +22,21 @@
       ]
     },
     {
-      "time": "2026-10-28T00:15:00.000Z",
-      "title": "RBA Gov Bullock Speaks",
+      "time": "2026-11-03T03:30:00.000Z",
+      "title": "Cash Rate",
       "currency": "AUD",
-      "impact": "medium",
+      "impact": "high",
+      "consensus": 4.85,
+      "prior": 4.6,
+      "affects": [
+        "AUDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-03T03:30:00.000Z",
+      "title": "RBA Monetary Policy Statement",
+      "currency": "AUD",
+      "impact": "high",
       "consensus": null,
       "prior": null,
       "affects": [
@@ -33,263 +44,225 @@
       ]
     },
     {
-      "time": "2026-10-28T00:30:00.000Z",
+      "time": "2026-11-03T03:30:00.000Z",
+      "title": "RBA Rate Statement",
+      "currency": "AUD",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "AUDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-03T04:30:00.000Z",
+      "title": "RBA Press Conference",
+      "currency": "AUD",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "AUDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-03T07:30:00.000Z",
       "title": "CPI m/m",
-      "currency": "AUD",
-      "impact": "high",
-      "consensus": 0.7,
-      "prior": 0.4,
+      "currency": "CHF",
+      "impact": "medium",
+      "consensus": 0,
+      "prior": 0,
       "affects": [
-        "AUDUSD"
+        "USDCHF"
       ]
     },
     {
-      "time": "2026-10-28T00:30:00.000Z",
-      "title": "CPI y/y",
-      "currency": "AUD",
-      "impact": "high",
-      "consensus": 4.2,
-      "prior": 4,
+      "time": "2026-11-03T15:00:00.000Z",
+      "title": "JOLTS Job Openings",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": 7.11,
+      "prior": 7.08,
       "affects": [
-        "AUDUSD"
-      ]
-    },
-    {
-      "time": "2026-10-28T00:30:00.000Z",
-      "title": "Trimmed Mean CPI m/m",
-      "currency": "AUD",
-      "impact": "high",
-      "consensus": 0.3,
-      "prior": 0.2,
-      "affects": [
-        "AUDUSD"
-      ]
-    },
-    {
-      "time": "2026-10-28T01:00:00.000Z",
-      "title": "Official Cash Rate",
-      "currency": "NZD",
-      "impact": "high",
-      "consensus": 3,
-      "prior": 2.75,
-      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
         "NZDUSD"
       ]
     },
     {
-      "time": "2026-10-28T01:00:00.000Z",
-      "title": "RBNZ Rate Statement",
-      "currency": "NZD",
+      "time": "2026-11-03T15:16:00.000Z",
+      "title": "Congressional Elections",
+      "currency": "USD",
       "impact": "high",
       "consensus": null,
       "prior": null,
       "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
         "NZDUSD"
       ]
     },
     {
-      "time": "2026-10-28T02:00:00.000Z",
-      "title": "RBNZ Press Conference",
-      "currency": "NZD",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "NZDUSD"
-      ]
-    },
-    {
-      "time": "2026-10-28T12:30:00.000Z",
-      "title": "Annual Budget Release",
-      "currency": "GBP",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "GBPUSD"
-      ]
-    },
-    {
-      "time": "2026-10-28T12:30:00.000Z",
-      "title": "Autumn Forecast Statement",
-      "currency": "GBP",
+      "time": "2026-11-03T16:00:00.000Z",
+      "title": "BOC Gov Macklem Speaks",
+      "currency": "CAD",
       "impact": "medium",
       "consensus": null,
       "prior": null,
       "affects": [
+        "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-11-03T21:45:00.000Z",
+      "title": "Employment Change q/q",
+      "currency": "NZD",
+      "impact": "high",
+      "consensus": 0.4,
+      "prior": 0.5,
+      "affects": [
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-03T21:45:00.000Z",
+      "title": "Unemployment Rate",
+      "currency": "NZD",
+      "impact": "high",
+      "consensus": 5.5,
+      "prior": 5.6,
+      "affects": [
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-04T10:00:00.000Z",
+      "title": "Core CPI Flash Estimate y/y",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": 2.5,
+      "prior": 2.5,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-11-04T10:00:00.000Z",
+      "title": "CPI Flash Estimate y/y",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": 4,
+      "prior": 3.8,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-11-04T15:00:00.000Z",
+      "title": "ISM Services PMI",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": 54.9,
+      "prior": 54.9,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-05T12:00:00.000Z",
+      "title": "BOE Monetary Policy Report",
+      "currency": "GBP",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
         "GBPUSD"
       ]
     },
     {
-      "time": "2026-10-28T13:45:00.000Z",
-      "title": "BOC Monetary Policy Report",
-      "currency": "CAD",
+      "time": "2026-11-05T12:00:00.000Z",
+      "title": "Monetary Policy Summary",
+      "currency": "GBP",
       "impact": "high",
       "consensus": null,
       "prior": null,
       "affects": [
-        "USDCAD"
+        "GBPUSD"
       ]
     },
     {
-      "time": "2026-10-28T13:45:00.000Z",
-      "title": "BOC Rate Statement",
-      "currency": "CAD",
+      "time": "2026-11-05T12:00:00.000Z",
+      "title": "MPC Official Bank Rate Votes",
+      "currency": "GBP",
       "impact": "high",
-      "consensus": null,
-      "prior": null,
+      "consensus": 7,
+      "prior": 3,
       "affects": [
-        "USDCAD"
+        "GBPUSD"
       ]
     },
     {
-      "time": "2026-10-28T13:45:00.000Z",
-      "title": "Overnight Rate",
-      "currency": "CAD",
-      "impact": "high",
-      "consensus": 2.5,
-      "prior": 2.25,
-      "affects": [
-        "USDCAD"
-      ]
-    },
-    {
-      "time": "2026-10-28T14:30:00.000Z",
-      "title": "BOC Press Conference",
-      "currency": "CAD",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "USDCAD"
-      ]
-    },
-    {
-      "time": "2026-10-28T18:00:00.000Z",
-      "title": "Federal Funds Rate",
-      "currency": "USD",
+      "time": "2026-11-05T12:00:00.000Z",
+      "title": "Official Bank Rate",
+      "currency": "GBP",
       "impact": "high",
       "consensus": 4,
-      "prior": 4,
+      "prior": 3.75,
       "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
+        "GBPUSD"
       ]
     },
     {
-      "time": "2026-10-28T18:00:00.000Z",
-      "title": "FOMC Statement",
-      "currency": "USD",
+      "time": "2026-11-05T12:30:00.000Z",
+      "title": "BOE Gov Bailey Speaks",
+      "currency": "GBP",
       "impact": "high",
       "consensus": null,
       "prior": null,
       "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
+        "GBPUSD"
       ]
     },
     {
-      "time": "2026-10-28T18:30:00.000Z",
-      "title": "FOMC Press Conference",
-      "currency": "USD",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
-      ]
-    },
-    {
-      "time": "2026-10-29T12:30:00.000Z",
-      "title": "Advance GDP q/q",
-      "currency": "USD",
-      "impact": "high",
-      "consensus": 3.2,
-      "prior": 1.5,
-      "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
-      ]
-    },
-    {
-      "time": "2026-10-29T12:30:00.000Z",
-      "title": "Core PCE Price Index m/m",
-      "currency": "USD",
-      "impact": "high",
-      "consensus": 0.3,
-      "prior": 0.2,
-      "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
-      ]
-    },
-    {
-      "time": "2026-10-29T12:30:00.000Z",
-      "title": "Advance GDP Price Index q/q",
-      "currency": "USD",
+      "time": "2026-11-05T12:40:00.000Z",
+      "title": "SNB Chairman Schlegel Speaks",
+      "currency": "CHF",
       "impact": "medium",
-      "consensus": 3.2,
-      "prior": 6.2,
+      "consensus": null,
+      "prior": null,
       "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
+        "USDCHF"
       ]
     },
     {
-      "time": "2026-10-29T12:30:00.000Z",
+      "time": "2026-11-05T13:30:00.000Z",
       "title": "Unemployment Claims",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 198,
+      "consensus": 197,
       "prior": 194,
       "affects": [
         "EURUSD",
@@ -305,133 +278,67 @@
       ]
     },
     {
-      "time": "2026-10-29T13:15:00.000Z",
-      "title": "Main Refinancing Rate",
-      "currency": "EUR",
-      "impact": "high",
-      "consensus": 2.65,
-      "prior": 2.65,
-      "affects": [
-        "EURUSD"
-      ]
-    },
-    {
-      "time": "2026-10-29T13:15:00.000Z",
-      "title": "Monetary Policy Statement",
-      "currency": "EUR",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "EURUSD"
-      ]
-    },
-    {
-      "time": "2026-10-29T13:45:00.000Z",
-      "title": "ECB Press Conference",
-      "currency": "EUR",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "EURUSD"
-      ]
-    },
-    {
-      "time": "2026-10-29T23:30:00.000Z",
-      "title": "Tokyo Core CPI y/y",
-      "currency": "JPY",
-      "impact": "medium",
-      "consensus": 2.6,
-      "prior": 2.7,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T03:02:00.000Z",
-      "title": "BOJ Outlook Report",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T03:02:00.000Z",
-      "title": "BOJ Policy Rate",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": 1.25,
-      "prior": 1.25,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T03:02:00.000Z",
-      "title": "Monetary Policy Statement",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T06:30:00.000Z",
-      "title": "BOJ Press Conference",
-      "currency": "JPY",
-      "impact": "high",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "USDJPY"
-      ]
-    },
-    {
-      "time": "2026-10-30T07:29:00.000Z",
-      "title": "German Prelim CPI m/m",
-      "currency": "EUR",
-      "impact": "medium",
-      "consensus": 0.1,
-      "prior": 0.6,
-      "affects": [
-        "EURUSD"
-      ]
-    },
-    {
-      "time": "2026-10-30T09:00:00.000Z",
-      "title": "German Prelim GDP q/q",
-      "currency": "EUR",
-      "impact": "medium",
-      "consensus": 0.1,
-      "prior": 0.2,
-      "affects": [
-        "EURUSD"
-      ]
-    },
-    {
-      "time": "2026-10-30T12:30:00.000Z",
-      "title": "GDP m/m",
+      "time": "2026-11-05T15:30:00.000Z",
+      "title": "BOC Gov Macklem Speaks",
       "currency": "CAD",
       "impact": "medium",
-      "consensus": 0.2,
-      "prior": 0,
+      "consensus": null,
+      "prior": null,
       "affects": [
         "USDCAD"
       ]
     },
     {
-      "time": "2026-10-30T12:30:00.000Z",
-      "title": "Employment Cost Index q/q",
-      "currency": "USD",
+      "time": "2026-11-05T18:00:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
       "impact": "medium",
-      "consensus": 0.8,
-      "prior": 0.9,
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
+      ]
+    },
+    {
+      "time": "2026-11-05T21:00:00.000Z",
+      "title": "Annual Budget Release",
+      "currency": "CAD",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-11-06T13:30:00.000Z",
+      "title": "Employment Change",
+      "currency": "CAD",
+      "impact": "high",
+      "consensus": 14.5,
+      "prior": -68.3,
+      "affects": [
+        "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-11-06T13:30:00.000Z",
+      "title": "Unemployment Rate",
+      "currency": "CAD",
+      "impact": "high",
+      "consensus": 6.5,
+      "prior": 6.5,
+      "affects": [
+        "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-11-06T13:30:00.000Z",
+      "title": "Average Hourly Earnings m/m",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 0.3,
+      "prior": 0.1,
       "affects": [
         "EURUSD",
         "GBPUSD",
@@ -442,6 +349,99 @@
         "AUDUSD",
         "USDCAD",
         "USDCHF",
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-06T13:30:00.000Z",
+      "title": "Non-Farm Employment Change",
+      "currency": "USD",
+      "impact": "high",
+      "consensus": 63,
+      "prior": 29,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-06T15:00:00.000Z",
+      "title": "Ivey PMI",
+      "currency": "CAD",
+      "impact": "medium",
+      "consensus": 57.7,
+      "prior": 58.2,
+      "affects": [
+        "USDCAD"
+      ]
+    },
+    {
+      "time": "2026-11-06T15:00:00.000Z",
+      "title": "Prelim UoM Consumer Sentiment",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": 47.8,
+      "prior": 46.3,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-06T15:00:00.000Z",
+      "title": "Prelim UoM Inflation Expectations",
+      "currency": "USD",
+      "impact": "medium",
+      "consensus": null,
+      "prior": 4.7,
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "USDJPY",
+        "XAUUSD",
+        "XAGUSD",
+        "NAS100",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-06T16:00:00.000Z",
+      "title": "BOJ Gov Ueda Speaks",
+      "currency": "JPY",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "USDJPY"
+      ]
+    },
+    {
+      "time": "2026-11-06T21:45:00.000Z",
+      "title": "Parliamentary Elections",
+      "currency": "NZD",
+      "impact": "high",
+      "consensus": null,
+      "prior": null,
+      "affects": [
         "NZDUSD"
       ]
     }
