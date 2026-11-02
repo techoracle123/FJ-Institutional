@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-11-02T13:37:50.408Z",
+  "fetchedAt": "2026-11-02T23:56:12.516Z",
   "events": [
     {
       "time": "2026-11-02T15:00:00.000Z",
@@ -81,7 +81,7 @@
       "title": "JOLTS Job Openings",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 7.11,
+      "consensus": 7.15,
       "prior": 7.08,
       "affects": [
         "EURUSD",
@@ -176,7 +176,7 @@
       "title": "ISM Services PMI",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 54.9,
+      "consensus": 54.8,
       "prior": 54.9,
       "affects": [
         "EURUSD",
@@ -315,7 +315,7 @@
       "title": "Employment Change",
       "currency": "CAD",
       "impact": "high",
-      "consensus": 14.5,
+      "consensus": 14.6,
       "prior": -68.3,
       "affects": [
         "USDCAD"
@@ -357,7 +357,7 @@
       "title": "Non-Farm Employment Change",
       "currency": "USD",
       "impact": "high",
-      "consensus": 63,
+      "consensus": 65,
       "prior": 29,
       "affects": [
         "EURUSD",
@@ -388,7 +388,7 @@
       "title": "Prelim UoM Consumer Sentiment",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 47.8,
+      "consensus": 48.1,
       "prior": 46.3,
       "affects": [
         "EURUSD",
