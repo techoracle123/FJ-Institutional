@@ -1,12 +1,12 @@
 {
-  "fetchedAt": "2026-11-01T21:15:33.027Z",
+  "fetchedAt": "2026-11-02T13:37:50.408Z",
   "events": [
     {
       "time": "2026-11-02T15:00:00.000Z",
       "title": "ISM Manufacturing PMI",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 54.7,
+      "consensus": 54.5,
       "prior": 54.5,
       "affects": [
         "EURUSD",
