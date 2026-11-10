@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-11-09T14:00:19.724Z",
+  "fetchedAt": "2026-11-10T00:44:23.145Z",
   "events": [
     {
       "time": "2026-11-09T17:25:00.000Z",
@@ -70,6 +70,17 @@
         "USDCAD",
         "USDCHF",
         "NZDUSD"
+      ]
+    },
+    {
+      "time": "2026-11-11T09:45:00.000Z",
+      "title": "ECB President Lagarde Speaks",
+      "currency": "EUR",
+      "impact": "medium",
+      "consensus": null,
+      "prior": null,
+      "affects": [
+        "EURUSD"
       ]
     },
     {
