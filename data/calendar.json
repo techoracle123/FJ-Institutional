@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-11-15T21:53:51.887Z",
+  "fetchedAt": "2026-11-16T13:46:27.916Z",
   "events": [
     {
       "time": "2026-11-16T13:30:00.000Z",
@@ -164,7 +164,7 @@
       "time": "2026-11-18T07:30:00.000Z",
       "title": "BOE Gov Bailey Speaks",
       "currency": "GBP",
-      "impact": "high",
+      "impact": "medium",
       "consensus": null,
       "prior": null,
       "affects": [
@@ -328,26 +328,6 @@
       "prior": null,
       "affects": [
         "EURUSD"
-      ]
-    },
-    {
-      "time": "2026-11-20T13:25:00.000Z",
-      "title": "FOMC Member Waller Speaks",
-      "currency": "USD",
-      "impact": "medium",
-      "consensus": null,
-      "prior": null,
-      "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
       ]
     },
     {
