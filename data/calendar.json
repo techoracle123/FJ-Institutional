@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-11-23T16:08:13.578Z",
+  "fetchedAt": "2026-11-24T03:22:11.647Z",
   "events": [
     {
       "time": "2026-11-23T08:15:00.000Z",
@@ -112,7 +112,7 @@
       "title": "CB Consumer Confidence",
       "currency": "USD",
       "impact": "medium",
-      "consensus": 92.1,
+      "consensus": 92.4,
       "prior": 91.7,
       "affects": [
         "EURUSD",
@@ -154,7 +154,7 @@
       "title": "CPI y/y",
       "currency": "AUD",
       "impact": "high",
-      "consensus": 4.8,
+      "consensus": 4.7,
       "prior": 4.3,
       "affects": [
         "AUDUSD"
@@ -232,31 +232,11 @@
       ]
     },
     {
-      "time": "2026-11-25T13:30:00.000Z",
-      "title": "Unemployment Claims",
-      "currency": "USD",
-      "impact": "medium",
-      "consensus": 201,
-      "prior": 203,
-      "affects": [
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "XAUUSD",
-        "XAGUSD",
-        "NAS100",
-        "AUDUSD",
-        "USDCAD",
-        "USDCHF",
-        "NZDUSD"
-      ]
-    },
-    {
       "time": "2026-11-26T23:30:00.000Z",
       "title": "Tokyo Core CPI y/y",
       "currency": "JPY",
       "impact": "medium",
-      "consensus": 2.9,
+      "consensus": 3,
       "prior": 2.6,
       "affects": [
         "USDJPY"
